@@ -117,6 +117,7 @@ struct wally_psbt {
     uint32_t has_tx_version;
     uint32_t fallback_locktime;
     uint32_t has_fallback_locktime;
+    uint8_t tx_modifiable_flags;
 };
 #endif /* SWIG */
 
@@ -560,10 +561,10 @@ WALLY_CORE_API int wally_psbt_set_tx_version(
 /**
  * Set the fallback locktime for a PSBT.
  *
- * :param psbt: The PSBT to set the transaction for.
+ * :param psbt: The PSBT to set the fallback locktime for.
  * :param locktime: The 32-bit little endian unsigned integer representing the transaction locktime to use if no inputs specify a required locktime.
  *
- * Sets the transaction version field in the transaction.
+ * Sets the fallback locktime field in the transaction.
  * Cannot be set on V0 PSBTs.
  */
 WALLY_CORE_API int wally_psbt_set_fallback_locktime(
@@ -577,6 +578,24 @@ WALLY_CORE_API int wally_psbt_set_fallback_locktime(
  */
 WALLY_CORE_API int wally_psbt_clear_fallback_locktime(
     struct wally_psbt *psbt);
+
+/**
+ * Set the tx modifiable flags for a PSBT.
+ *
+ * :param psbt: The PSBT to set the transaction for.
+ * :param tx_modifiable_flags: The 8 bit little endian unsigned integer as a bitfield for various transaction modification flags.
+ *
+ * Sets the tx modifiable flags for a psbt.
+ * Bit 0 is the Inputs Modifiable Flag and indicates whether inputs can be modified.
+ * Bit 1 is the Outputs Modifiable Flag and indicates whether outputs can be modified.
+ * Bit 2 is the Has SIGHASH_SINGLE flag and indicates whether the transaction has a
+ * SIGHASH_SINGLE signature who's input and output pairing must be preserved.
+ * Bit 2 essentially indicates that the Constructor
+ * must iterate the inputs to determine whether and how to add an input.
+ */
+WALLY_CORE_API int wally_psbt_set_tx_modifiable_flags(
+    struct wally_psbt *psbt,
+    uint8_t tx_modifiable_flags);
 
 /**
  * Add a transaction input to PBST at a given position.

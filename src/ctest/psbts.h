@@ -341,15 +341,15 @@ static const struct psbt_test valid_psbts[] = {
 */
       "cHNidP8BAAoAAAAAAAAAAAAAAA=="},
 /*
-  Case: PSBT v2 that has 0 inputs and 0 outputs, fallback locktime, tx version
+  Case: PSBT v2 that has 0 inputs and 0 outputs, fallback locktime, tx version, tx modifiable flags
   Bytes in Hex:
 
 */
-    { "70736274ff01fb04020000000102040200000001030401020304010401000105010000",
+    { "70736274ff01fb0402000000010204020000000103040102030401040100010501000106010700",
 /*
   Base64 String:
 */
-      "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEAAQUBAAA="}
+      "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEAAQUBAAEGAQcA"}
 
 #ifdef BUILD_ELEMENTS
     ,

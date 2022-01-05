@@ -575,6 +575,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_output_vbf_len);
 %returns_size_t(wally_psbt_get_output_witness_script);
 %returns_size_t(wally_psbt_get_output_witness_script_len);
+%rename("_psbt_get_tx_modifiable_flags") wally_psbt_get_tx_modifiable_flags;
 %returns_size_t(wally_psbt_get_tx_version)
 %returns_size_t(wally_psbt_get_version);
 %returns_size_t(wally_psbt_has_input_value);
@@ -616,6 +617,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_void__(wally_psbt_set_output_value_commitment);
 %returns_void__(wally_psbt_set_output_vbf);
 %returns_void__(wally_psbt_set_output_witness_script);
+%returns_void__(wally_psbt_set_tx_modifiable_flags);
 %returns_void__(wally_psbt_set_tx_version);
 %returns_void__(wally_psbt_sign);
 %returns_string(wally_psbt_to_base64);

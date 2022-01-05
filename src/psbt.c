@@ -670,6 +670,7 @@ PSBT_GET(num_inputs)
 PSBT_GET(num_outputs)
 PSBT_GET(tx_version)
 PSBT_GET(fallback_locktime)
+PSBT_GET(tx_modifiable_flags)
 
 int wally_psbt_set_tx_version(struct wally_psbt *psbt, uint32_t tx_version) {
     if(!psbt || psbt->version == 0) return WALLY_EINVAL;
@@ -689,6 +690,12 @@ int wally_psbt_clear_fallback_locktime(struct wally_psbt *psbt) {
     if(!psbt || psbt->version == 0) return WALLY_EINVAL;
     psbt->fallback_locktime = 0;
     psbt->has_fallback_locktime = 0u;
+    return WALLY_OK;
+}
+
+int wally_psbt_set_tx_modifiable_flags(struct wally_psbt *psbt, uint8_t tx_modifiable_flags) {
+    if(!psbt || psbt->version == 0) return WALLY_EINVAL;
+    psbt->tx_modifiable_flags = tx_modifiable_flags;
     return WALLY_OK;
 }
 
@@ -1344,11 +1351,12 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
 {
     const unsigned char *magic, *pre_key;
     int ret;
-    size_t i, key_len, input_count, output_count;
+    size_t i, key_len, input_count = 0, output_count = 0;
     struct wally_psbt *result = NULL;
     uint32_t flags = 0, pre144flag = WALLY_TX_FLAG_PRE_BIP144;
     bool found_input_count = false, found_output_count = false,
-         found_tx_version = false, found_fallback_locktime = false;
+         found_tx_version = false, found_fallback_locktime = false,
+         found_tx_modifiable_flags = false;
 
     TX_CHECK_OUTPUT;
 
@@ -1471,6 +1479,10 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
             break;
         }
         case PSBT_GLOBAL_FALLBACK_LOCKTIME: {
+            if (found_fallback_locktime == true) {
+                ret = WALLY_EINVAL;
+                goto fail;
+            }
             found_fallback_locktime = true;
             subfield_nomore_end(&bytes, &len, key, key_len);
             pull_subfield_start(&bytes, &len,
@@ -1478,6 +1490,20 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
                                 &val, &val_max);
             result->fallback_locktime = pull_le32(&val, &val_max);
             result->has_fallback_locktime = 1u;
+            subfield_nomore_end(&bytes, &len, val, val_max);
+            break;
+        }
+        case PSBT_GLOBAL_TX_MODIFIABLE: {
+            if (found_tx_modifiable_flags == true) {
+                ret = WALLY_EINVAL;
+                goto fail;
+            }
+            found_tx_modifiable_flags = true;
+            subfield_nomore_end(&bytes, &len, key, key_len);
+            pull_subfield_start(&bytes, &len,
+                                pull_varint(&bytes, &len),
+                                &val, &val_max);
+            result->tx_modifiable_flags = pull_u8(&val, &val_max);
             subfield_nomore_end(&bytes, &len, val, val_max);
             break;
         }
@@ -1499,7 +1525,8 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
     }
 
     if (result->version == 0 && (!result->tx || found_input_count ||
-                                 found_output_count || found_tx_version || found_fallback_locktime)) {
+                                 found_output_count || found_tx_version ||
+                                 found_fallback_locktime || found_tx_modifiable_flags)) {
         ret = WALLY_EINVAL; /* Missing required field or includes invalid field */
         goto fail;
     }
@@ -1888,6 +1915,11 @@ int wally_psbt_to_bytes(const struct wally_psbt *psbt, uint32_t flags,
         n = varint_to_bytes(psbt->num_outputs, buf);
         push_varbuff(&cursor, &max, buf, n);
 
+        if (psbt->tx_modifiable_flags != 0) {
+            push_psbt_key(&cursor, &max, PSBT_GLOBAL_TX_MODIFIABLE, NULL, 0);
+            push_varint(&cursor, &max, sizeof(uint8_t));
+            push_u8(&cursor, &max, psbt->tx_modifiable_flags);
+        }
     }
 
     /* Unknowns */
@@ -2090,6 +2122,9 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
         psbt->fallback_locktime = src->fallback_locktime;
         psbt->has_fallback_locktime = src->has_fallback_locktime;
     }
+
+    if (!psbt->tx_modifiable_flags && src->tx_modifiable_flags)
+        psbt->tx_modifiable_flags = src->tx_modifiable_flags;
 
     for (i = 0; ret == WALLY_OK && i < psbt->num_inputs; ++i)
         ret = combine_inputs(&psbt->inputs[i], &src->inputs[i]);

@@ -408,6 +408,10 @@
       return checkBuffer(buf, len);
   }
 
+  public final static long psbt_get_tx_modifiable_flags(final Object psbt) {
+      return _psbt_get_tx_modifiable_flags(psbt) & 0x000000000000000fL;
+  }
+
   public final static void cleanup() {
       _cleanup(0);
   }

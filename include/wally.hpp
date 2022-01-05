@@ -853,6 +853,12 @@ inline int psbt_set_global_tx(const PSBT& psbt, const struct wally_tx* tx) {
 }
 
 template <class PSBT>
+inline int psbt_set_tx_modifiable_flags(const PSBT& psbt) {
+    int ret = ::wally_psbt_set_tx_modifiable_flags(detail::get_p(psbt));
+    return ret;
+}
+
+template <class PSBT>
 inline int psbt_set_tx_version(const PSBT& psbt, uint32_t tx_version) {
     int ret = ::wally_psbt_set_tx_version(detail::get_p(psbt), tx_version);
     return ret;

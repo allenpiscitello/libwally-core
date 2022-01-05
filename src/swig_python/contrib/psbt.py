@@ -128,6 +128,16 @@ class PSBTTests(unittest.TestCase):
         
         self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQABBQEAAA==")
         
+        psbt_set_tx_modifiable_flags(psbt2, 1)
+        
+        self.assertEqual(psbt_get_tx_modifiable_flags(psbt2), 1)
+        
+        with self.assertRaises(ValueError): #Cannot set TX Modifiable Flags on NULL PSBT.
+            psbt_set_tx_modifiable_flags(None, 3)
+            
+        with self.assertRaises(ValueError): #Cannot set TX Modifiable Flags on V0 PSBT.
+            psbt_set_tx_modifiable_flags(psbt, 1)
+        
         #
         # Inputs
         #

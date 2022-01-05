@@ -216,6 +216,9 @@ class PSBTTests(unittest.TestCase):
         self.assertEqual(ret, WALLY_OK)
         self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAA==", base64)
         
+        self.assertEqual(wally_psbt_set_tx_modifiable_flags(psbt, 3), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAQYBAwA=", base64)
         
 
 if __name__ == '__main__':
