@@ -669,11 +669,26 @@ PSBT_GET(version)
 PSBT_GET(num_inputs)
 PSBT_GET(num_outputs)
 PSBT_GET(tx_version)
+PSBT_GET(fallback_locktime)
 
 int wally_psbt_set_tx_version(struct wally_psbt *psbt, uint32_t tx_version) {
     if(!psbt || psbt->version == 0) return WALLY_EINVAL;
     psbt->tx_version = tx_version;
     psbt->has_tx_version = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_set_fallback_locktime(struct wally_psbt *psbt, uint32_t locktime) {
+    if(!psbt || psbt->version == 0) return WALLY_EINVAL;
+    psbt->fallback_locktime = locktime;
+    psbt->has_fallback_locktime = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_clear_fallback_locktime(struct wally_psbt *psbt) {
+    if(!psbt || psbt->version == 0) return WALLY_EINVAL;
+    psbt->fallback_locktime = 0;
+    psbt->has_fallback_locktime = 0u;
     return WALLY_OK;
 }
 
@@ -1332,7 +1347,8 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
     size_t i, key_len, input_count, output_count;
     struct wally_psbt *result = NULL;
     uint32_t flags = 0, pre144flag = WALLY_TX_FLAG_PRE_BIP144;
-    bool found_input_count = false, found_output_count = false, found_tx_version = false;
+    bool found_input_count = false, found_output_count = false,
+         found_tx_version = false, found_fallback_locktime = false;
 
     TX_CHECK_OUTPUT;
 
@@ -1454,6 +1470,17 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
             subfield_nomore_end(&bytes, &len, val, val_max);
             break;
         }
+        case PSBT_GLOBAL_FALLBACK_LOCKTIME: {
+            found_fallback_locktime = true;
+            subfield_nomore_end(&bytes, &len, key, key_len);
+            pull_subfield_start(&bytes, &len,
+                                pull_varint(&bytes, &len),
+                                &val, &val_max);
+            result->fallback_locktime = pull_le32(&val, &val_max);
+            result->has_fallback_locktime = 1u;
+            subfield_nomore_end(&bytes, &len, val, val_max);
+            break;
+        }
         /* Unknowns */
         default: {
             ret = pull_unknown_key_value(&bytes, &len, pre_key, &result->unknowns);
@@ -1472,7 +1499,7 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
     }
 
     if (result->version == 0 && (!result->tx || found_input_count ||
-                                 found_output_count || found_tx_version)) {
+                                 found_output_count || found_tx_version || found_fallback_locktime)) {
         ret = WALLY_EINVAL; /* Missing required field or includes invalid field */
         goto fail;
     }
@@ -1847,6 +1874,12 @@ int wally_psbt_to_bytes(const struct wally_psbt *psbt, uint32_t flags,
         push_varint(&cursor, &max, sizeof(uint32_t));
         push_le32(&cursor, &max, psbt->tx_version);
 
+        if (psbt->has_fallback_locktime) {
+            push_psbt_key(&cursor, &max, PSBT_GLOBAL_FALLBACK_LOCKTIME, NULL, 0);
+            push_varint(&cursor, &max, sizeof(uint32_t));
+            push_le32(&cursor, &max, psbt->fallback_locktime);
+        }
+
         push_psbt_key(&cursor, &max, PSBT_GLOBAL_INPUT_COUNT, NULL, 0);
         n = varint_to_bytes(psbt->num_inputs, buf);
         push_varbuff(&cursor, &max, buf, n);
@@ -2053,6 +2086,11 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
     size_t i;
     int ret = WALLY_OK;
 
+    if (!psbt->has_fallback_locktime && src->has_fallback_locktime) {
+        psbt->fallback_locktime = src->fallback_locktime;
+        psbt->has_fallback_locktime = src->has_fallback_locktime;
+    }
+
     for (i = 0; ret == WALLY_OK && i < psbt->num_inputs; ++i)
         ret = combine_inputs(&psbt->inputs[i], &src->inputs[i]);
 
@@ -2065,15 +2103,23 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
     return ret;
 }
 
+int psbt_calculate_locktime(const struct wally_psbt *psbt, uint32_t *locktime)
+{
+    *locktime = psbt->fallback_locktime;
+    return WALLY_OK;
+}
+
 int psbt_build_tx(const struct wally_psbt *psbt, struct wally_tx **tx)
 {
     int ret;
 
-    uint32_t locktime = 0;
+    uint32_t locktime;
     size_t is_elements;
 
     if ((ret = wally_psbt_is_elements(psbt, &is_elements)) != WALLY_OK)
         return ret;
+
+    ret = psbt_calculate_locktime(psbt, &locktime);
 
     if ((ret = wally_tx_init_alloc(psbt->tx_version, locktime, psbt->num_inputs, psbt->num_outputs, tx)) != WALLY_OK)
         return ret;

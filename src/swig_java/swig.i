@@ -489,6 +489,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_array_(wally_pbkdf2_hmac_sha512, 7, 8, PBKDF2_HMAC_SHA512_LEN);
 %returns_void__(wally_psbt_add_input_at);
 %returns_void__(wally_psbt_add_output_at);
+%returns_void__(wally_psbt_clear_fallback_locktime);
 %returns_void__(wally_psbt_clear_input_value);
 %returns_struct(wally_psbt_clone_alloc, wally_psbt);
 %rename("psbt_clone") wally_psbt_clone_alloc;
@@ -544,6 +545,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_input_witness_script_len);
 %returns_struct(wally_psbt_get_input_witness_utxo_alloc, wally_tx_output);
 %rename("psbt_get_input_witness_utxo") wally_psbt_get_input_witness_utxo_alloc;
+%returns_size_t(wally_psbt_get_fallback_locktime);
 %returns_size_t(wally_psbt_get_length);
 %returns_size_t(wally_psbt_get_num_inputs);
 %returns_size_t(wally_psbt_get_num_outputs);
@@ -582,6 +584,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_is_finalized);
 %returns_void__(wally_psbt_remove_input);
 %returns_void__(wally_psbt_remove_output);
+%returns_void__(wally_psbt_set_fallback_locktime);
 %returns_void__(wally_psbt_set_global_tx);
 %returns_void__(wally_psbt_set_input_abf);
 %returns_void__(wally_psbt_set_input_asset);

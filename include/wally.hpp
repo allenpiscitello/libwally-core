@@ -617,6 +617,11 @@ inline int psbt_add_output_at(const PSBT& psbt, uint32_t index, uint32_t flags, 
     return ret;
 }
 
+inline int psbt_clear_fallback_locktime(struct wally_psbt* psbt) {
+    int ret = ::wally_psbt_clear_fallback_locktime(psbt);
+    return ret;
+}
+
 template <class PSBT>
 inline int psbt_clone_alloc(const PSBT& psbt, uint32_t flags, struct wally_psbt** output) {
     int ret = ::wally_psbt_clone_alloc(detail::get_p(psbt), flags, output);
@@ -832,6 +837,12 @@ inline int psbt_remove_input(const PSBT& psbt, uint32_t index) {
 template <class PSBT>
 inline int psbt_remove_output(const PSBT& psbt, uint32_t index) {
     int ret = ::wally_psbt_remove_output(detail::get_p(psbt), index);
+    return ret;
+}
+
+template <class PSBT>
+inline int psbt_set_fallback_locktime(const PSBT& psbt, uint32_t locktime) {
+    int ret = ::wally_psbt_set_fallback_locktime(detail::get_p(psbt), locktime);
     return ret;
 }
 

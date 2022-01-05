@@ -115,6 +115,8 @@ struct wally_psbt {
     uint32_t version;
     uint32_t tx_version;
     uint32_t has_tx_version;
+    uint32_t fallback_locktime;
+    uint32_t has_fallback_locktime;
 };
 #endif /* SWIG */
 
@@ -554,6 +556,27 @@ WALLY_CORE_API int wally_psbt_set_global_tx(
 WALLY_CORE_API int wally_psbt_set_tx_version(
     struct wally_psbt *psbt,
     uint32_t tx_version);
+
+/**
+ * Set the fallback locktime for a PSBT.
+ *
+ * :param psbt: The PSBT to set the transaction for.
+ * :param locktime: The 32-bit little endian unsigned integer representing the transaction locktime to use if no inputs specify a required locktime.
+ *
+ * Sets the transaction version field in the transaction.
+ * Cannot be set on V0 PSBTs.
+ */
+WALLY_CORE_API int wally_psbt_set_fallback_locktime(
+    struct wally_psbt *psbt,
+    uint32_t locktime);
+
+/**
+ * Clear the fallback locktime for a PSBT.
+ *
+ * :param psbt: The PSBT to update.
+ */
+WALLY_CORE_API int wally_psbt_clear_fallback_locktime(
+    struct wally_psbt *psbt);
 
 /**
  * Add a transaction input to PBST at a given position.

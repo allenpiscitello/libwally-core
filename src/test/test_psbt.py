@@ -195,7 +195,7 @@ class PSBTTests(unittest.TestCase):
         ret, base64 = wally_psbt_to_base64(psbt, 0)        
         self.assertEqual(ret, WALLY_OK)
         self.assertEqual("cHNidP8A", base64)
-        
+    
         self.assertEqual(wally_psbt_init_alloc(2, 0, 0, 0, psbt), WALLY_OK)
         ret, base64 = wally_psbt_to_base64(psbt, 0)
         self.assertEqual(ret, WALLY_OK)
@@ -205,6 +205,17 @@ class PSBTTests(unittest.TestCase):
         ret, base64 = wally_psbt_to_base64(psbt, 0)    
         self.assertEqual(ret, WALLY_OK)
         self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAA==", base64)
+        
+        self.assertEqual(wally_psbt_set_fallback_locktime(psbt, 456), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)    
+        self.assertEqual(ret, WALLY_OK)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEDBMgBAAABBAEAAQUBAAA=", base64)
+        
+        self.assertEqual(wally_psbt_clear_fallback_locktime(psbt), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)    
+        self.assertEqual(ret, WALLY_OK)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAA==", base64)
+        
         
 
 if __name__ == '__main__':

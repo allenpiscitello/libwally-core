@@ -112,6 +112,22 @@ class PSBTTests(unittest.TestCase):
         with self.assertRaises(ValueError): #Cannot set TX Version on NULL PSBT.
             psbt_set_tx_version(None, 3)
         
+        with self.assertRaises(ValueError):  # Cannot set Fallback Locktime on V0 PSBT.
+            psbt_set_fallback_locktime(psbt, 3)
+        
+        psbt_set_fallback_locktime(psbt2, 3)
+        self.assertEqual(psbt_get_fallback_locktime(psbt2), 3)
+        
+        with self.assertRaises(ValueError): #Cannot set Fallback Locktime on NULL PSBT.
+            psbt_set_fallback_locktime(None, 3)
+            
+        psbt_clear_fallback_locktime(psbt2)
+        
+        with self.assertRaises(ValueError): #Cannot clear Fallback Locktime Version on NULL PSBT.
+            psbt_clear_fallback_locktime(None)
+        
+        self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQABBQEAAA==")
+        
         #
         # Inputs
         #
