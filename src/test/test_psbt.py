@@ -21,17 +21,23 @@ class PSBTTests(unittest.TestCase):
             extractors = d['extractor']
 
         for invalid in invalids:
-            self.assertEqual(WALLY_EINVAL, wally_psbt_from_base64(invalid.encode('utf-8'), pointer(wally_psbt())))
+            self.assertEqual(WALLY_EINVAL, wally_psbt_from_base64(invalid.encode('utf-8'), pointer(wally_psbt())), 
+                            msg = "Failed Invalid PSBT {0}".format(invalid.encode('utf-8')))
 
         for valid in valids:
             psbt = pointer(wally_psbt())
-            self.assertEqual(WALLY_OK, wally_psbt_from_base64(valid['psbt'].encode('utf-8'), psbt))
+            self.assertEqual(WALLY_OK, wally_psbt_from_base64(valid['psbt'].encode('utf-8'), psbt),
+                             msg = "Failed Valid PSBT {0}".format(valid['psbt'].encode('utf-8')))
             ret, reser = wally_psbt_to_base64(psbt, 0)
-            self.assertEqual(WALLY_OK, ret)
-            self.assertEqual(valid['psbt'], reser)
+            self.assertEqual(WALLY_OK, ret,
+                             msg = "Failed Valid PSBT {0}".format(valid['psbt'].encode('utf-8')))
+            self.assertEqual(valid['psbt'], reser,
+                             msg = "Failed Valid PSBT {0}".format(valid['psbt'].encode('utf-8')))
             ret, length = wally_psbt_get_length(psbt, 0)
-            self.assertEqual(WALLY_OK, ret)
-            self.assertEqual(length, valid['len'])
+            self.assertEqual(WALLY_OK, ret,
+                             msg = "Failed Valid PSBT {0}".format(valid['psbt'].encode('utf-8')))
+            self.assertEqual(length, valid['len'],
+                             msg = "Failed Valid PSBT {0}".format(valid['psbt'].encode('utf-8')))
 
         for creator in creators:
             psbt = pointer(wally_psbt())
@@ -180,6 +186,26 @@ class PSBTTests(unittest.TestCase):
         expected_b64 = "cHNidP8BAJoCAAAAAvezqpNxOIDkwNFhfZVLYvuhQxqmqNPJwlyXbhc8cuLPAQAAAAD9////krlOMdd9VVzPWn5+oadTb4C3NnUFWA3tF6cb1RiI4JAAAAAAAP3///8CESYAAAAAAAAWABQn/PFABd2EW5RsCUvJitAYNshf9BAnAAAAAAAAFgAUFpodxCngMIyYnbJ1mhpDwQykN4cAAAAAAAEAiQIAAAABfRJscM0GWu793LYoAX15Mnj+dVr0G7yvRMBeWSmvPpQAAAAAFxYAFESkW2FnrJlkwmQZjTXL1IVM95lW/f///wK76QAAAAAAABYAFB33sq8WtoOlpvUpCvoWbxJJl5rhECcAAAAAAAAXqRTFhAlcZBMRkG4iAustDT6iSw6wkIcAAAAAAQEgECcAAAAAAAAXqRTFhAlcZBMRkG4iAustDT6iSw6wkIcBBxcWABSLInl3egAHj/E1xymd9vWdJ7knmQEIawJHMEQCIAkPXe9sdpRjSDTjJ0gIrpwGGIWJby9xSd1rS9hPe1f0AiAJgqR7PL3G/MXyUu4KZdS1Z2O14fjxstF43k634u+4GAEhA/2o8s1fdIIUPtMyDtplUnd3xmIb8GI2pBgmOFjWMaHmAAEAcgIAAAAB97Oqk3E4gOTA0WF9lUti+6FDGqao08nCXJduFzxy4s8AAAAAAP3///8CECcAAAAAAAAXqRRcl9Sf+c1s0P5r5CGoefIJLL2g+YcdwgAAAAAAABYAFJQPdrykhhpou8p1nGgQ8V+jy+UPAAAAAAEBIBAnAAAAAAAAF6kUXJfUn/nNbND+a+QhqHnyCSy9oPmHAQcXFgAUyRIBhZwlI4RLT6NDHluovlrN3iABCGsCRzBEAiAOzRsNZ+2Et+VGCY/nXWO7WxGI3u39kpi025cUaJXQJgIgL6KtMqPfAwXGktQFWr9SNnOrHF2xjvKQI2VdeuQbxt0BIQIs+YA2N8B5O6nF4SgVEG765xfHZFKrLiKbjZuo8/9vPAAiAgKvIfgAREwuU3M7rbN8YQrVwMyBFBzOYjLoL8BTK7QnOBAStOnGAAAAgAEAAIDDAACAAAA="
         self.assertEqual(new64.encode('utf-8'), expected_b64.encode('utf-8'))
 
+
+    def test_create_psbt(self):
+        # can create version 0 or 2
+        
+        psbt = pointer(wally_psbt())
+        self.assertEqual(wally_psbt_init_alloc(0, 0, 0, 0, psbt), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)        
+        self.assertEqual(ret, WALLY_OK)
+        self.assertEqual("cHNidP8A", base64)
+        
+        self.assertEqual(wally_psbt_init_alloc(2, 0, 0, 0, psbt), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)
+        self.assertEqual(ret, WALLY_OK)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEAgAAAAEEAQABBQEAAA==", base64)
+        
+        self.assertEqual(wally_psbt_set_tx_version(psbt, 123), WALLY_OK)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)    
+        self.assertEqual(ret, WALLY_OK)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAA==", base64)
+        
 
 if __name__ == '__main__':
     unittest.main()

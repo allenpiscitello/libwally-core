@@ -29,6 +29,11 @@
 #define PSBT_SEPARATOR 0x00
 
 #define PSBT_GLOBAL_UNSIGNED_TX 0x00
+#define PSBT_GLOBAL_TX_VERSION 0x02
+#define PSBT_GLOBAL_FALLBACK_LOCKTIME 0x03
+#define PSBT_GLOBAL_INPUT_COUNT 0x04
+#define PSBT_GLOBAL_OUTPUT_COUNT 0x05
+#define PSBT_GLOBAL_TX_MODIFIABLE 0x06
 #define PSBT_GLOBAL_VERSION 0xFB
 
 #define PSBT_IN_NON_WITNESS_UTXO 0x00
@@ -40,10 +45,22 @@
 #define PSBT_IN_BIP32_DERIVATION 0x06
 #define PSBT_IN_FINAL_SCRIPTSIG 0x07
 #define PSBT_IN_FINAL_SCRIPTWITNESS 0x08
+#define PSBT_IN_POR_COMMITMENT 0x09
+#define PSBT_IN_RIPEMD160 0x0a
+#define PSBT_IN_SHA256 0x0b
+#define PSBT_IN_HASH160 0x0c
+#define PSBT_IN_HASH256 0x0d
+#define PSBT_IN_PREVIOUS_TXID 0x0e
+#define PSBT_IN_OUTPUT_INDEX 0x0f
+#define PSBT_IN_SEQUENCE 0x10
+#define PSBT_IN_REQUIRED_TIME_LOCKTIME 0x11
+#define PSBT_IN_REQUIRED_HEIGHT_LOCKTIME 0x012
 
 #define PSBT_OUT_REDEEM_SCRIPT 0x00
 #define PSBT_OUT_WITNESS_SCRIPT 0x01
 #define PSBT_OUT_BIP32_DERIVATION 0x02
+#define PSBT_OUT_AMOUNT 0x03
+#define PSBT_OUT_SCRIPT 0x04
 
 #ifdef BUILD_ELEMENTS
 #define PSET_IN_VALUE 0x00
@@ -564,8 +581,8 @@ int wally_psbt_init_alloc(uint32_t version, size_t inputs_allocation_len,
     int ret;
 
     TX_CHECK_OUTPUT;
-    if (version)
-        return WALLY_EINVAL; /* Only version 0 is specified/supported */
+    if (version != 0 && version != 2)
+        return WALLY_EINVAL; /* Only versions 0 and 2 are specified/supported */
     TX_OUTPUT_ALLOC(struct wally_psbt);
 
     if (inputs_allocation_len)
@@ -582,6 +599,8 @@ int wally_psbt_init_alloc(uint32_t version, size_t inputs_allocation_len,
     }
 
     result->version = version;
+    result->tx_version = 2;
+    result->has_tx_version = 1u;
     memcpy(result->magic, PSBT_MAGIC, sizeof(PSBT_MAGIC));
     result->inputs_allocation_len = inputs_allocation_len;
     result->outputs_allocation_len = outputs_allocation_len;
@@ -649,6 +668,14 @@ int wally_psbt_get_global_tx_alloc(const struct wally_psbt *psbt, struct wally_t
 PSBT_GET(version)
 PSBT_GET(num_inputs)
 PSBT_GET(num_outputs)
+PSBT_GET(tx_version)
+
+int wally_psbt_set_tx_version(struct wally_psbt *psbt, uint32_t tx_version) {
+    if(!psbt || psbt->version == 0) return WALLY_EINVAL;
+    psbt->tx_version = tx_version;
+    psbt->has_tx_version = 1u;
+    return WALLY_OK;
+}
 
 int wally_psbt_is_finalized(const struct wally_psbt *psbt,
                             size_t *written)
@@ -1302,9 +1329,10 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
 {
     const unsigned char *magic, *pre_key;
     int ret;
-    size_t i, key_len;
+    size_t i, key_len, input_count, output_count;
     struct wally_psbt *result = NULL;
     uint32_t flags = 0, pre144flag = WALLY_TX_FLAG_PRE_BIP144;
+    bool found_input_count = false, found_output_count = false, found_tx_version = false;
 
     TX_CHECK_OUTPUT;
 
@@ -1378,10 +1406,52 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
                                 &val, &val_max);
             result->version = pull_le32(&val, &val_max);
             subfield_nomore_end(&bytes, &len, val, val_max);
-            if (result->version > WALLY_PSBT_HIGHEST_VERSION) {
+            if (result->version > WALLY_PSBT_HIGHEST_VERSION || result->version == 1) {
                 ret = WALLY_EINVAL;    /* Unsupported version number */
                 goto fail;
             }
+            break;
+        }
+        case PSBT_GLOBAL_INPUT_COUNT: {
+            if (found_input_count == true) {
+                ret = WALLY_EINVAL;
+                goto fail;
+            }
+            found_input_count = true;
+            subfield_nomore_end(&bytes, &len, key, key_len);
+            pull_subfield_start(&bytes, &len,
+                                pull_varint(&bytes, &len),
+                                &val, &val_max);
+            input_count = pull_varint(&val, &val_max);
+            subfield_nomore_end(&bytes, &len, val, val_max);
+            break;
+        }
+        case PSBT_GLOBAL_OUTPUT_COUNT: {
+            if (found_output_count == true) {
+                ret = WALLY_EINVAL;
+                goto fail;
+            }
+            found_output_count = true;
+            subfield_nomore_end(&bytes, &len, key, key_len);
+            pull_subfield_start(&bytes, &len,
+                                pull_varint(&bytes, &len),
+                                &val, &val_max);
+            output_count = pull_varint(&val, &val_max);
+            subfield_nomore_end(&bytes, &len, val, val_max);
+            break;
+        }
+        case PSBT_GLOBAL_TX_VERSION: {
+            if (found_tx_version == true) {
+                ret = WALLY_EINVAL;
+                goto fail;
+            }
+            found_tx_version = true;
+            subfield_nomore_end(&bytes, &len, key, key_len);
+            pull_subfield_start(&bytes, &len,
+                                pull_varint(&bytes, &len),
+                                &val, &val_max);
+            result->tx_version = pull_le32(&val, &val_max);
+            subfield_nomore_end(&bytes, &len, val, val_max);
             break;
         }
         /* Unknowns */
@@ -1401,20 +1471,54 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
         goto fail;
     }
 
-    if (!result->tx) {
+    if (result->version == 0 && (!result->tx || found_input_count ||
+                                 found_output_count || found_tx_version)) {
+        ret = WALLY_EINVAL; /* Missing required field or includes invalid field */
+        goto fail;
+    }
+
+    if (result->version >= 2 && (!found_input_count || !found_output_count || !found_tx_version)) {
+        ret = WALLY_EINVAL; /* Missing required field */
+        goto fail;
+    }
+
+    if (!result->tx && result->version == 0) {
         ret = WALLY_EINVAL; /* No global tx */
         goto fail;
     }
 
+    if (!result->tx) {
+        result->num_inputs = input_count;
+        result->inputs = wally_calloc(result->num_inputs * sizeof(struct wally_psbt_input));
+
+        result->num_outputs = output_count;
+        result->outputs = wally_calloc(result->num_outputs * sizeof(struct wally_psbt_output));
+
+        if (!result->inputs || !result->outputs) {
+            ret = WALLY_ENOMEM;
+            goto fail;
+        }
+
+        result->inputs_allocation_len = result->num_inputs;
+        result->outputs_allocation_len = result->num_outputs;
+    }
+
+    else if (result->version >= 2) {
+        if (result->num_inputs != input_count || result->num_outputs != output_count) {
+            ret = WALLY_EINVAL;
+            goto fail;
+        }
+    }
+
     /* Read inputs */
-    for (i = 0; i < result->tx->num_inputs; ++i) {
+    for (i = 0; i < result->num_inputs; ++i) {
         ret = pull_psbt_input(&bytes, &len, flags, &result->inputs[i]);
         if (ret != WALLY_OK)
             goto fail;
     }
 
     /* Read outputs */
-    for (i = 0; i < result->tx->num_outputs; ++i) {
+    for (i = 0; i < result->num_outputs; ++i) {
         ret = pull_psbt_output(&bytes, &len, &result->outputs[i]);
         if (ret != WALLY_OK)
             goto fail;
@@ -1723,17 +1827,34 @@ int wally_psbt_to_bytes(const struct wally_psbt *psbt, uint32_t flags,
     push_bytes(&cursor, &max, psbt->magic, sizeof(psbt->magic));
 
     /* Global tx */
-    push_psbt_key(&cursor, &max, PSBT_GLOBAL_UNSIGNED_TX, NULL, 0);
-    ret = push_length_and_tx(&cursor, &max, psbt->tx,
-                             WALLY_TX_FLAG_ALLOW_PARTIAL | WALLY_TX_FLAG_PRE_BIP144);
-    if (ret != WALLY_OK)
-        return ret;
+    if(psbt->tx) {
+        push_psbt_key(&cursor, &max, PSBT_GLOBAL_UNSIGNED_TX, NULL, 0);
+        ret = push_length_and_tx(&cursor, &max, psbt->tx,
+                                 WALLY_TX_FLAG_ALLOW_PARTIAL | WALLY_TX_FLAG_PRE_BIP144);
+        if (ret != WALLY_OK)
+            return ret;
+    }
 
-    /* version */
-    if (psbt->version > 0) {
+    if (psbt->version >= 2) {
+        size_t n;
+        unsigned char buf[sizeof(uint8_t) + sizeof(uint64_t)];
+
         push_psbt_key(&cursor, &max, PSBT_GLOBAL_VERSION, NULL, 0);
         push_varint(&cursor, &max, sizeof(uint32_t));
         push_le32(&cursor, &max, psbt->version);
+
+        push_psbt_key(&cursor, &max, PSBT_GLOBAL_TX_VERSION, NULL, 0);
+        push_varint(&cursor, &max, sizeof(uint32_t));
+        push_le32(&cursor, &max, psbt->tx_version);
+
+        push_psbt_key(&cursor, &max, PSBT_GLOBAL_INPUT_COUNT, NULL, 0);
+        n = varint_to_bytes(psbt->num_inputs, buf);
+        push_varbuff(&cursor, &max, buf, n);
+
+        push_psbt_key(&cursor, &max, PSBT_GLOBAL_OUTPUT_COUNT, NULL, 0);
+        n = varint_to_bytes(psbt->num_outputs, buf);
+        push_varbuff(&cursor, &max, buf, n);
+
     }
 
     /* Unknowns */
@@ -1944,20 +2065,66 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
     return ret;
 }
 
-int wally_psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
+int psbt_build_tx(const struct wally_psbt *psbt, struct wally_tx **tx)
 {
-    unsigned char txid[WALLY_TXHASH_LEN];
     int ret;
 
-    if (!psbt || !psbt->tx || !src || !src->tx)
+    uint32_t locktime = 0;
+    size_t is_elements;
+
+    if ((ret = wally_psbt_is_elements(psbt, &is_elements)) != WALLY_OK)
+        return ret;
+
+    if ((ret = wally_tx_init_alloc(psbt->tx_version, locktime, psbt->num_inputs, psbt->num_outputs, tx)) != WALLY_OK)
+        return ret;
+
+    return WALLY_OK;
+}
+
+int psbt_get_unique_id(const struct wally_psbt *psbt, unsigned char *txid, size_t txid_len)
+{
+    int ret;
+    struct wally_tx *built_tx;
+    if (psbt->tx) {
+        ret = wally_tx_get_txid(psbt->tx, txid, txid_len) != WALLY_OK;
+        return ret;
+    }
+
+    if ((ret = psbt_build_tx(psbt, &built_tx)) != WALLY_OK)
+        return ret;
+    built_tx->locktime = 0;
+
+    for (size_t i = 0; i < built_tx->num_inputs; i++) {
+        built_tx->inputs[i].sequence = 0;
+    }
+
+    ret = wally_tx_get_txid(built_tx, txid, txid_len);
+    wally_tx_free(built_tx);
+
+    return ret;
+}
+
+int wally_psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
+{
+    unsigned char src_txid[WALLY_TXHASH_LEN], dest_txid[WALLY_TXHASH_LEN];
+    int ret;
+
+    if (!psbt || (psbt->version == 0 && !psbt->tx) || !src || (src->version == 0 && !src->tx))
         return WALLY_EINVAL;
 
-    ret = wally_tx_get_txid(src->tx, txid, sizeof(txid));
+    if ((ret = psbt_get_unique_id(psbt, dest_txid, WALLY_TXHASH_LEN)) != WALLY_OK)
+        return ret;
 
-    if (ret == WALLY_OK && !is_matching_txid(psbt->tx, txid, sizeof(txid)))
-        ret = WALLY_EINVAL; /* Transactions don't match */
+    if ((ret = psbt_get_unique_id(src, src_txid, WALLY_TXHASH_LEN)) != WALLY_OK) {
+        wally_clear(dest_txid, sizeof(dest_txid));
+        return ret;
+    }
 
-    wally_clear(txid, sizeof(txid));
+    if (memcmp(src_txid, dest_txid, WALLY_TXHASH_LEN) != 0)
+        ret = WALLY_EINVAL;
+
+    wally_clear(src_txid, sizeof(src_txid));
+    wally_clear(dest_txid, sizeof(dest_txid));
     return ret == WALLY_OK ? psbt_combine(psbt, src) : ret;
 }
 
@@ -2099,17 +2266,29 @@ int wally_psbt_sign(struct wally_psbt *psbt,
     unsigned char wpkh_sc[WALLY_SCRIPTPUBKEY_P2PKH_LEN];
     size_t is_elements, i;
     int ret;
+    struct wally_tx *tx;
 
-    if (!psbt || !psbt->tx || !key || key_len != EC_PRIVATE_KEY_LEN ||
+    if (!psbt || (psbt->version == 0 && !psbt->tx) || !key || key_len != EC_PRIVATE_KEY_LEN ||
         (flags & ~EC_FLAGS_ALL)) {
         return WALLY_EINVAL;
+    }
+
+    if (psbt->tx) {
+        if ((ret = wally_tx_clone_alloc(psbt->tx, 0, &tx)) != WALLY_OK)
+            return ret;
+    }
+    else {
+        if ((ret = psbt_build_tx(psbt, &tx)) != WALLY_OK)
+            return ret;
     }
 
     if ((ret = wally_psbt_is_elements(psbt, &is_elements)) != WALLY_OK)
         return ret;
 #ifndef BUILD_ELEMENTS
-    if (is_elements)
-        return WALLY_EINVAL;
+    if (is_elements) {
+        ret = WALLY_EINVAL;
+        goto cleanup;
+    }
 #endif /* ndef BUILD_ELEMENTS */
 
     /* Get the pubkey */

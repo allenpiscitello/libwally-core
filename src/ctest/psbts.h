@@ -339,7 +339,17 @@ static const struct psbt_test valid_psbts[] = {
 /*
   Base64 String:
 */
-      "cHNidP8BAAoAAAAAAAAAAAAAAA=="}
+      "cHNidP8BAAoAAAAAAAAAAAAAAA=="},
+/*
+  Case: PSBT v2 that has 0 inputs and 0 outputs
+  Bytes in Hex:
+
+*/
+    { "70736274ff01fb040200000001020402000000010401000105010000",
+/*
+  Base64 String:
+*/
+      "cHNidP8B+wQCAAAAAQIEAgAAAAEEAQABBQEAAA=="}
 
 #ifdef BUILD_ELEMENTS
     ,

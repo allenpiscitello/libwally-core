@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /* PSBT Version number */
-#define WALLY_PSBT_HIGHEST_VERSION 0
+#define WALLY_PSBT_HIGHEST_VERSION 2
 
 /* Ignore scriptsig and witness when adding an input */
 #define WALLY_PSBT_FLAG_NON_FINAL 0x1
@@ -113,6 +113,8 @@ struct wally_psbt {
     size_t outputs_allocation_len;
     struct wally_map unknowns;
     uint32_t version;
+    uint32_t tx_version;
+    uint32_t has_tx_version;
 };
 #endif /* SWIG */
 
@@ -493,7 +495,7 @@ WALLY_CORE_API int wally_psbt_output_find_unknown(
 /**
  * Allocate and initialize a new PSBT.
  *
- * :param version: The version of the PSBT. Must be 0.
+ * :param version: The version of the PSBT. Must be 0 or 2.
  * :param inputs_allocation_len: The number of inputs to pre-allocate space for.
  * :param outputs_allocation_len: The number of outputs to pre-allocate space for.
  * :param global_unknowns_allocation_len: The number of global unknowns to allocate space for.
@@ -539,6 +541,19 @@ WALLY_CORE_API int wally_psbt_is_finalized(
 WALLY_CORE_API int wally_psbt_set_global_tx(
     struct wally_psbt *psbt,
     const struct wally_tx *tx);
+
+/**
+ * Set the transaction version for a PSBT.
+ *
+ * :param psbt: The PSBT to set the transaction version for.
+ * :param version: The version to use for the transaction.
+ *
+ * Sets the transaction version field in the transaction.
+ * Cannot be set on V0 PSBTs.
+ */
+WALLY_CORE_API int wally_psbt_set_tx_version(
+    struct wally_psbt *psbt,
+    uint32_t tx_version);
 
 /**
  * Add a transaction input to PBST at a given position.

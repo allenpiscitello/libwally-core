@@ -841,6 +841,12 @@ inline int psbt_set_global_tx(const PSBT& psbt, const struct wally_tx* tx) {
     return ret;
 }
 
+template <class PSBT>
+inline int psbt_set_tx_version(const PSBT& psbt, uint32_t tx_version) {
+    int ret = ::wally_psbt_set_tx_version(detail::get_p(psbt), tx_version);
+    return ret;
+}
+
 template <class PSBT, class KEY>
 inline int psbt_sign(const PSBT& psbt, const KEY& key, uint32_t flags) {
     int ret = ::wally_psbt_sign(detail::get_p(psbt), key.data(), key.size(), flags);

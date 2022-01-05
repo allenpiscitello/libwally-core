@@ -13,6 +13,7 @@ WALLY_CORE_API int wally_psbt_get_global_tx_alloc(const struct wally_psbt *psbt,
 WALLY_CORE_API int wally_psbt_get_version(const struct wally_psbt *psbt, size_t *written);
 WALLY_CORE_API int wally_psbt_get_num_inputs(const struct wally_psbt *psbt, size_t *written);
 WALLY_CORE_API int wally_psbt_get_num_outputs(const struct wally_psbt *psbt, size_t *written);
+WALLY_CORE_API int wally_psbt_get_tx_version(const struct wally_psbt *psbt, size_t *written);
 
 /* Inputs */
 WALLY_CORE_API int wally_psbt_get_input_utxo_alloc(const struct wally_psbt *psbt, size_t index, struct wally_tx **output);
