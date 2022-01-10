@@ -240,6 +240,7 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* output_generator, size_t output_generator_len) };
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* parent160, size_t parent160_len) };
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* pass, size_t pass_len) };
+%apply(char *STRING, size_t LENGTH) { (const unsigned char* previous_txid, size_t previous_txid_len) };
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* priv_key, size_t priv_key_len) };
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* proof, size_t proof_len) };
 %apply(char *STRING, size_t LENGTH) { (const unsigned char* pub_key, size_t pub_key_len) };
@@ -525,7 +526,10 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_input_keypaths_size);
 %returns_size_t(wally_psbt_get_input_keypath);
 %returns_size_t(wally_psbt_get_input_keypath_len);
+%returns_size_t(wally_psbt_get_input_output_index);
 %returns_struct(wally_psbt_get_input_pegin_tx_alloc, wally_tx);
+%returns_size_t(wally_psbt_get_input_previous_txid);
+%returns_size_t(wally_psbt_get_input_previous_txid_len);
 %returns_size_t(wally_psbt_get_input_signatures_size);
 %returns_size_t(wally_psbt_get_input_signature);
 %returns_size_t(wally_psbt_get_input_signature_len);
@@ -594,7 +598,9 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_void__(wally_psbt_set_input_final_witness);
 %returns_void__(wally_psbt_set_input_genesis_blockhash);
 %returns_void__(wally_psbt_set_input_keypaths);
+%returns_void__(wally_psbt_set_input_output_index);
 %returns_void__(wally_psbt_set_input_pegin_tx);
+%returns_void__(wally_psbt_set_input_previous_txid);
 %returns_void__(wally_psbt_set_input_redeem_script);
 %returns_void__(wally_psbt_set_input_sighash);
 %returns_void__(wally_psbt_set_input_signatures);

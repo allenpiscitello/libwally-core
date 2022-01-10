@@ -54,6 +54,10 @@ struct wally_psbt_input {
     struct wally_map signatures;
     struct wally_map unknowns;
     uint32_t sighash;
+    uint32_t psbt_version;
+    unsigned char *previous_txid;
+    size_t previous_txid_len;
+    uint32_t output_index;
 #ifdef BUILD_ELEMENTS
     uint64_t value;
     uint32_t has_value;
@@ -891,6 +895,28 @@ WALLY_CORE_API int wally_psbt_input_set_claim_script(
     struct wally_psbt_input *input,
     const unsigned char *script,
     size_t script_len);
+
+/**
+ * Set the previous txid in an input.
+ *
+ * :param input: The input to update.
+ * :param previous_txid: The previous hash for this input.
+ * :param previous_txid_len: Length of ``previous_txid`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_previous_txid(
+    struct wally_psbt_input *input,
+    const unsigned char *previous_txid,
+    size_t previous_txid_len);
+
+/**
+ * Set the output index in an input.
+ *
+ * :param input: The input to update.
+ * :param index: The index of the spent output for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_output_index(
+    struct wally_psbt_input *input,
+    uint32_t output_index);
 
 /**
  * Set the blinding pubkey in an elements output.

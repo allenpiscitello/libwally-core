@@ -188,8 +188,8 @@ class PSBTTests(unittest.TestCase):
 
 
     def test_create_psbt(self):
-        # can create version 0 or 2
         
+        # can create version 0 or 2
         psbt = pointer(wally_psbt())
         self.assertEqual(wally_psbt_init_alloc(0, 0, 0, 0, psbt), WALLY_OK)
         ret, base64 = wally_psbt_to_base64(psbt, 0)        
@@ -218,7 +218,23 @@ class PSBTTests(unittest.TestCase):
         
         self.assertEqual(wally_psbt_set_tx_modifiable_flags(psbt, 3), WALLY_OK)
         ret, base64 = wally_psbt_to_base64(psbt, 0)
+        self.assertEqual(WALLY_OK, ret)
         self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAQYBAwA=", base64)
+        
+        #create an input
+        
+        tx_input = pointer(wally_tx_input())
+        
+        txhash, txhash_len = make_cbuffer("e7f25add4560021c77c4944f92739025fddbf99816d79c06d219268ca9f4b7e7")
+        ret = wally_tx_input_init_alloc(txhash, txhash_len, 5, 0, b'\x59', 1, None, tx_input)
+        self.assertEqual(WALLY_OK, ret)
+        ret = wally_psbt_add_input_at(psbt, 0, 0, tx_input)
+        self.assertEqual(WALLY_OK, ret)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)        
+        self.assertEqual(WALLY_OK, ret)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAAA", base64)
+        
+        
         
 
 if __name__ == '__main__':

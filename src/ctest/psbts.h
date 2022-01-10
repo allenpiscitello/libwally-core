@@ -309,15 +309,15 @@ static const struct psbt_test valid_psbts[] = {
       "cHNidP8BAFICAAAAAZ38ZijCbFiZ/hvT3DOGZb/VXXraEPYiCXPfLTht7BJ2AQAAAAD/////AfA9zR0AAAAAFgAUezoAv9wU0neVwrdJAdCdpu8TNXkAAAAATwEENYfPAto/0AiAAAAAlwSLGtBEWx7IJ1UXcnyHtOTrwYogP/oPlMAVZr046QADUbdDiH7h1A3DKmBDck8tZFmztaTXPa7I+64EcvO8Q+IM2QxqT64AAIAAAACATwEENYfPAto/0AiAAAABuQRSQnE5zXjCz/JES+NTzVhgXj5RMoXlKLQH+uP2FzUD0wpel8itvFV9rCrZp+OcFyLrrGnmaLbyZnzB1nHIPKsM2QxqT64AAIABAACAAAEBKwBlzR0AAAAAIgAgLFSGEmxJeAeagU4TcV1l82RZ5NbMre0mbQUIZFuvpjIBBUdSIQKdoSzbWyNWkrkVNq/v5ckcOrlHPY5DtTODarRWKZyIcSEDNys0I07Xz5wf6l0F1EFVeSe+lUKxYusC4ass6AIkwAtSriIGAp2hLNtbI1aSuRU2r+/lyRw6uUc9jkO1M4NqtFYpnIhxENkMak+uAACAAAAAgAAAAAAiBgM3KzQjTtfPnB/qXQXUQVV5J76VQrFi6wLhqyzoAiTACxDZDGpPrgAAgAEAAIAAAAAAACICA57/H1R6HV+S36K6evaslxpL0DukpzSwMVaiVritOh75EO3kXMUAAACAAAAAgAEAAIAA"},
 
 /*
-  Case: PSBT with unknown types in the inputs.
+  Case: PSBT with unknown types in the inputs. (Note: Had to modify since it used a PSBT2 field that is not allowed in V0.)
   Bytes in Hex:
 
 */
-    { "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000a0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000",
+    { "70736274ff01003f0200000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000ffffffff010000000000000000036a010000000000000dfc01ee0f0102030405060708090f0102030405060708090a0b0c0d0e0f0000",
 /*
   Base64 String:
 */
-      "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAACg8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAA="},
+      "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAADfwB7g8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAA="},
 
 /*
   Case: PSBT with `PSBT_GLOBAL_XPUB`.
@@ -349,11 +349,22 @@ static const struct psbt_test valid_psbts[] = {
 /*
   Base64 String:
 */
-      "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEAAQUBAAEGAQcA"}
+      "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEAAQUBAAEGAQcA"},
+/*
+  Case: PSBT v2 that has 1 input and 0 outputs, fallback locktime, tx version, tx modifiable flags
+  Bytes in Hex:
+
+*/
+    { "70736274ff01fb04020000000102040200000001030401020304010401010105010000010e200102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20010f040102030400",
+/*
+  Base64 String:
+*/
+      "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEBAQUBAAABDiABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fIAEPBAECAwQA"}
+
 
 #ifdef BUILD_ELEMENTS
     ,
-/*
+/*988976
   Case: PSET
   Bytes in Hex:
 

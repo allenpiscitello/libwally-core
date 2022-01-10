@@ -3,7 +3,7 @@ import unittest
 from wallycore import *
 
 SAMPLE = "cHNidP8BAFICAAAAAZ38ZijCbFiZ/hvT3DOGZb/VXXraEPYiCXPfLTht7BJ2AQAAAAD/////AfA9zR0AAAAAFgAUezoAv9wU0neVwrdJAdCdpu8TNXkAAAAATwEENYfPAto/0AiAAAAAlwSLGtBEWx7IJ1UXcnyHtOTrwYogP/oPlMAVZr046QADUbdDiH7h1A3DKmBDck8tZFmztaTXPa7I+64EcvO8Q+IM2QxqT64AAIAAAACATwEENYfPAto/0AiAAAABuQRSQnE5zXjCz/JES+NTzVhgXj5RMoXlKLQH+uP2FzUD0wpel8itvFV9rCrZp+OcFyLrrGnmaLbyZnzB1nHIPKsM2QxqT64AAIABAACAAAEBKwBlzR0AAAAAIgAgLFSGEmxJeAeagU4TcV1l82RZ5NbMre0mbQUIZFuvpjIBBUdSIQKdoSzbWyNWkrkVNq/v5ckcOrlHPY5DtTODarRWKZyIcSEDNys0I07Xz5wf6l0F1EFVeSe+lUKxYusC4ass6AIkwAtSriIGAp2hLNtbI1aSuRU2r+/lyRw6uUc9jkO1M4NqtFYpnIhxENkMak+uAACAAAAAgAAAAAAiBgM3KzQjTtfPnB/qXQXUQVV5J76VQrFi6wLhqyzoAiTACxDZDGpPrgAAgAEAAIAAAAAAACICA57/H1R6HV+S36K6evaslxpL0DukpzSwMVaiVritOh75EO3kXMUAAACAAAAAgAEAAIAA"
-SAMPLE_2 = "cHNidP8B+wQCAAAAAQIEewAAAAEEAQABBQEAAA=="
+SAMPLE_2 = "cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAA="
 
 class PSBTTests(unittest.TestCase):
 
@@ -17,6 +17,15 @@ class PSBTTests(unittest.TestCase):
         fn(psbt, 0, valid_value) # Set
         fn(psbt, 0, null_value) # Un-set
         self._try_invalid(fn, psbt, valid_value)
+        
+    def _try_get_set_i(self, setfn, clearfn, getfn, psbt, valid_value):
+        self._try_invalid(setfn, psbt, valid_value)
+        setfn(psbt, 0, valid_value) # Set
+        self._try_invalid(getfn, psbt)
+        ret = getfn(psbt, 0) # Get
+        self.assertEqual(valid_value, ret)
+        if clearfn:
+            clearfn(psbt, 0)
 
     def _try_get_set_b(self, setfn, getfn, lenfn, psbt, valid_value, null_value=None):
         self._try_set(setfn, psbt, valid_value, null_value)
@@ -126,7 +135,7 @@ class PSBTTests(unittest.TestCase):
         with self.assertRaises(ValueError): #Cannot clear Fallback Locktime Version on NULL PSBT.
             psbt_clear_fallback_locktime(None)
         
-        self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQABBQEAAA==")
+        self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQEBBQEAAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAA=")
         
         psbt_set_tx_modifiable_flags(psbt2, 1)
         
@@ -177,6 +186,23 @@ class PSBTTests(unittest.TestCase):
         self._try_set(psbt_set_input_sighash, psbt, 0xff, 0x0)
         self.assertEqual(psbt_get_input_sighash(psbt, 0), 0)
         self._try_invalid(psbt_get_input_sighash, psbt)
+        
+        with self.assertRaises(ValueError): #Cannot set txhash on V0 PSBT.
+            psbt_set_input_previous_txid(psbt, 0, dummy_bytes)
+        
+        self._try_get_set_b(psbt_set_input_previous_txid, 
+                            psbt_get_input_previous_txid,
+                            psbt_get_input_previous_txid_len, psbt2, dummy_bytes)
+        
+        
+        with self.assertRaises(ValueError): #Cannot set output index on V0 PSBT.
+            psbt_set_input_output_index(psbt, 0, 1234)
+            
+        self._try_get_set_i(psbt_set_input_output_index,
+                            None,
+                            psbt_get_input_output_index,
+                            psbt2, 1234)
+        
 
         if is_elements_build():
             self._try_set(psbt_set_input_value, psbt, 1234567, 0)
@@ -253,6 +279,7 @@ class PSBTTests(unittest.TestCase):
             self._try_get_set_b(psbt_set_output_surjectionproof,
                                 psbt_get_output_surjectionproof,
                                 psbt_get_output_surjectionproof_len, psbt, dummy_bytes)
+            
 
 
 if __name__ == '__main__':

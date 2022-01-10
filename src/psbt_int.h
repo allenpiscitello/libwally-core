@@ -40,6 +40,9 @@ WALLY_CORE_API int wally_psbt_find_input_unknown(const struct wally_psbt *psbt, 
 WALLY_CORE_API int wally_psbt_get_input_unknown(const struct wally_psbt *psbt, size_t index, size_t subindex, unsigned char *bytes_out, size_t len, size_t *written);
 WALLY_CORE_API int wally_psbt_get_input_unknown_len(const struct wally_psbt *psbt, size_t index, size_t subindex, size_t *written);
 WALLY_CORE_API int wally_psbt_get_input_sighash(const struct wally_psbt *psbt, size_t index, size_t *written);
+WALLY_CORE_API int wally_psbt_get_input_previous_txid(const struct wally_psbt *psbt, size_t index, unsigned char *bytes_out, size_t len, size_t *written);
+WALLY_CORE_API int wally_psbt_get_input_previous_txid_len(const struct wally_psbt *psbt, size_t index, size_t *written);
+WALLY_CORE_API int wally_psbt_get_input_output_index(const struct wally_psbt *psbt, size_t index, size_t *written);
 
 WALLY_CORE_API int wally_psbt_set_input_utxo(struct wally_psbt *psbt, size_t index, const struct wally_tx *utxo);
 WALLY_CORE_API int wally_psbt_set_input_witness_utxo(struct wally_psbt *psbt, size_t index, const struct wally_tx_output *witness_utxo);
@@ -51,6 +54,8 @@ WALLY_CORE_API int wally_psbt_set_input_keypaths(struct wally_psbt *psbt, size_t
 WALLY_CORE_API int wally_psbt_set_input_signatures(struct wally_psbt *psbt, size_t index, const struct wally_map *map_in);
 WALLY_CORE_API int wally_psbt_set_input_unknowns(struct wally_psbt *psbt, size_t index, const struct wally_map *map_in);
 WALLY_CORE_API int wally_psbt_set_input_sighash(struct wally_psbt *psbt, size_t index, uint32_t sighash);
+WALLY_CORE_API int wally_psbt_set_input_previous_txid(struct wally_psbt *psbt, size_t index, const unsigned char *previous_txid, size_t previous_txid_len);
+WALLY_CORE_API int wally_psbt_set_input_output_index(struct wally_psbt *psbt, size_t index, uint32_t output_index);
 
 #ifdef BUILD_ELEMENTS
 WALLY_CORE_API int wally_psbt_get_input_value(const struct wally_psbt *psbt, size_t index, uint64_t *value_out);

@@ -1561,8 +1561,20 @@ inline int psbt_input_set_genesis_blockhash(const INPUT& input, const GENESIS_BL
 }
 
 template <class INPUT>
+inline int psbt_input_set_output_index(const INPUT& input, uint32_t output_index) {
+    int ret = ::wally_psbt_input_set_output_index(detail::get_p(input), output_index);
+    return ret;
+}
+
+template <class INPUT>
 inline int psbt_input_set_pegin_tx(const INPUT& input, const struct wally_tx* pegin_tx) {
     int ret = ::wally_psbt_input_set_pegin_tx(detail::get_p(input), pegin_tx);
+    return ret;
+}
+
+template <class INPUT, class PREVIOUS_TXID>
+inline int psbt_input_set_previous_txid(const INPUT& input, const PREVIOUS_TXID& previous_txid) {
+    int ret = ::wally_psbt_input_set_previous_txid(detail::get_p(input), previous_txid.data(), previous_txid.size());
     return ret;
 }
 

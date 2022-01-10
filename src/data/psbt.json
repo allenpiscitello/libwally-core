@@ -57,8 +57,9 @@
           "len": 452
         },
         {
-          "psbt": "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAACg8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAA=",
-          "len": 101
+          "comment": "This used a 0x0A field for inputs, which is now a valid 2.0 field, so it would have been invalid, so we changed this to be a properitary field.",
+          "psbt": "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAADfwB7g8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAA=",
+          "len": 104
         },
         {
           "comment": "Partial transaction (with no outputs)",
@@ -69,6 +70,11 @@
             "comment": "PSBT Version 2 (no inputs, no outputs)",
             "psbt": "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEAAQUBAAA=",
             "len": 35
+        },
+        {
+            "comment": "PSBT Version 2 (1 input, no outputs)",
+            "psbt": "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEBAQUBAAABDiABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fIAEPBAECAwQA",
+            "len": 78
         }
     ],
     "creator" : [
@@ -173,11 +179,12 @@
             "result" : "cHNidP8BAJoCAAAAAljoeiG1ba8MI76OcHBFbDNvfLqlyHV5JPVFiHuyq911AAAAAAD/////g40EJ9DsZQpoqka7CwmK6kQiwHGyyng1Kgd5WdB86h0BAAAAAP////8CcKrwCAAAAAAWABTYXCtx0AYLCcmIauuBXlCZHdoSTQDh9QUAAAAAFgAUAK6pouXw+HaliN9VRuh0LR2HAI8AAAAAAAEAuwIAAAABqtc5MQGL0l+ErkALaISL4J23BurCrBgpi6vucatlb4sAAAAASEcwRAIgWPb8fGoz4bMVSNSByCbAFb0wE1qtQs1neQ2rZtKtJDsCIEoc7SYExnNbY5PltBaR3XiwDwxZQvufdRhW+qk4FX26Af7///8CgPD6AgAAAAAXqRQPuUY0IWlrgsgzryQceMF9295JNIfQ8gonAQAAABepFCnKdPigj4GZlCgYXJe12FLkBj9hh2UAAAAiAgKVg785rgpgl0etGZrd1jT6YQhVnWxc05tMIYPxq5bgf0cwRAIgdAGK1BgAl7hzMjwAFXILNoTMgSOJEEjn282bVa1nnJkCIHPTabdA4+tT3O+jOCPIBwUUylWn3ZVE8VfBZ5EyYRGMASICAtq2H/SaFNtqfQKwzR+7ePxLGDErW05U2uTbovv+9TbXRzBEAiBjGpif5zipKtAZhgIzEsGSFP4oArOeXLwaw2eIBsaSwwIgOdtsOHvSZ3Ft/bPU2NpQuOhdITMmunx9qqTAzkHrkiMBAQMEAQAAAAEER1IhApWDvzmuCmCXR60Zmt3WNPphCFWdbFzTm0whg/GrluB/IQLath/0mhTban0CsM0fu3j8SxgxK1tOVNrk26L7/vU211KuIgYClYO/Oa4KYJdHrRma3dY0+mEIVZ1sXNObTCGD8auW4H8Q2QxqTwAAAIAAAACAAAAAgCIGAtq2H/SaFNtqfQKwzR+7ePxLGDErW05U2uTbovv+9TbXENkMak8AAACAAAAAgAEAAIAAAQEgAMLrCwAAAAAXqRS39fr0Dj1ApaRZsds1NfK3L6kh6IciAgMIncEMesbbVPkTKa9hczPbOIzq0MIx9yM3nRuZAwsC3EcwRAIgYut6VWEHp8c/RaxKtaHd329wdfsSdZaafzg+//eEvLICIAwF27dHDb8vCFV901bHMlwe0wkT6ZbNOECUXbEiKNpfASICAjrdkE89bc9Z3bkGsN7iNSm3/7ntUOXoYVGSaGAiHw5zRzBEAiBl9FulmYtZon/+GnvtAWrx8fkNVLOqj3RQql9WolEDvQIgf3JHA60e25ZoCyhLVtT/y4j3+3Weq74IqjDym4UTg9IBAQMEAQAAAAEEIgAgjCNTFzdDtZXftKB7crqOQuN5fadOh/59nXSX47ICiQMBBUdSIQMIncEMesbbVPkTKa9hczPbOIzq0MIx9yM3nRuZAwsC3CECOt2QTz1tz1nduQaw3uI1Kbf/ue1Q5ehhUZJoYCIfDnNSriIGAjrdkE89bc9Z3bkGsN7iNSm3/7ntUOXoYVGSaGAiHw5zENkMak8AAACAAAAAgAMAAIAiBgMIncEMesbbVPkTKa9hczPbOIzq0MIx9yM3nRuZAwsC3BDZDGpPAAAAgAAAAIACAACAACICA6mkw39ZltOqJdusa1cK8GUDlEkpQkYLNUdT7Z7spYdxENkMak8AAACAAAAAgAQAAIAAIgICf2OZdX0u/1WhNq0CxoSxg4tlVuXxtrNCgqlLa1AFEJYQ2QxqTwAAAIAAAACABQAAgAA="
         },
         {
-            "combine" : [
-                "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAKDwECAwQFBgcICQ8BAgMEBQYHCAkKCwwNDg8ACg8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAAoPAQIDBAUGBwgJDwECAwQFBgcICQoLDA0ODwA=",
-                "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAKDwECAwQFBgcIEA8BAgMEBQYHCAkKCwwNDg8ACg8BAgMEBQYHCBAPAQIDBAUGBwgJCgsMDQ4PAAoPAQIDBAUGBwgQDwECAwQFBgcICQoLDA0ODwA="
+            "comment": "This used a 0x0A field for inputs, which is now a valid 2.0 field, so it would have been invalid, so we changed this to be a properitary field.",
+            "combine": [
+                "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAN/AHuDwECAwQFBgcICQ8BAgMEBQYHCAkKCwwNDg8ADfwB7g8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PAA38Ae4PAQIDBAUGBwgJDwECAwQFBgcICQoLDA0ODwA=",
+                "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAN/AHuDwECAwQFBgcIEA8BAgMEBQYHCAkKCwwNDg8ADfwB7g8BAgMEBQYHCBAPAQIDBAUGBwgJCgsMDQ4PAA38Ae4PAQIDBAUGBwgQDwECAwQFBgcICQoLDA0ODwA="
             ],
-            "result" : "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAKDwECAwQFBgcICQ8BAgMEBQYHCAkKCwwNDg8KDwECAwQFBgcIEA8BAgMEBQYHCAkKCwwNDg8ACg8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PCg8BAgMEBQYHCBAPAQIDBAUGBwgJCgsMDQ4PAAoPAQIDBAUGBwgJDwECAwQFBgcICQoLDA0ODwoPAQIDBAUGBwgQDwECAwQFBgcICQoLDA0ODwA="
+            "result" : "cHNidP8BAD8CAAAAAf//////////////////////////////////////////AAAAAAD/////AQAAAAAAAAAAA2oBAAAAAAAN/AHuDwECAwQFBgcICQ8BAgMEBQYHCAkKCwwNDg8N/AHuDwECAwQFBgcIEA8BAgMEBQYHCAkKCwwNDg8ADfwB7g8BAgMEBQYHCAkPAQIDBAUGBwgJCgsMDQ4PDfwB7g8BAgMEBQYHCBAPAQIDBAUGBwgJCgsMDQ4PAA38Ae4PAQIDBAUGBwgJDwECAwQFBgcICQoLDA0ODw38Ae4PAQIDBAUGBwgQDwECAwQFBgcICQoLDA0ODwA="
         }
     ],
     "finalizer" : [
