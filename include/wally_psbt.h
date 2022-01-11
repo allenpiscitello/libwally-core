@@ -89,6 +89,11 @@ struct wally_psbt_output {
     size_t witness_script_len;
     struct wally_map keypaths;
     struct wally_map unknowns;
+    uint32_t psbt_version;
+    uint64_t amount;
+    uint32_t has_amount;
+    unsigned char *script;
+    size_t script_len;
 #ifdef BUILD_ELEMENTS
     unsigned char *blinding_pubkey;
     size_t blinding_pubkey_len;
@@ -409,6 +414,64 @@ WALLY_CORE_API int wally_psbt_input_set_sighash(
     uint32_t sighash);
 
 /**
+ * Set the previous txid in an input.
+ *
+ * :param input: The input to update.
+ * :param previous_txid: The previous hash for this input.
+ * :param previous_txid_len: Length of ``previous_txid`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_previous_txid(
+    struct wally_psbt_input *input,
+    const unsigned char *previous_txid,
+    size_t previous_txid_len);
+
+/**
+ * Set the output index in an input.
+ *
+ * :param input: The input to update.
+ * :param index: The index of the spent output for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_output_index(
+    struct wally_psbt_input *input,
+    uint32_t output_index);
+
+/**
+ * Set the sequence number in an input.
+ *
+ * :param input: The input to update.
+ * :param sequence: The sequence number for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_sequence(
+    struct wally_psbt_input *input,
+    uint32_t sequence);
+
+/**
+ * Clear the sequence number in an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_sequence(
+    struct wally_psbt_input *input);
+
+/**
+ * Set the required locktime in an input.
+ *
+ * :param input: The input to update.
+ * :param required_locktime: The required locktime for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_required_locktime(
+    struct wally_psbt_input *input,
+    uint32_t required_locktime);
+
+/**
+ * Clear the required locktime in an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_required_locktime(
+    struct wally_psbt_input *input);
+
+/**
  * Set the redeem_script in an output.
  *
  * :param output: The input to update.
@@ -501,6 +564,28 @@ WALLY_CORE_API int wally_psbt_output_find_unknown(
     const unsigned char *key,
     size_t key_len,
     size_t *written);
+
+/**
+ * Set the amount in an output.
+ *
+ * :param output: The output to update.
+ * :param amount: The amount for this output.
+ */
+WALLY_CORE_API int wally_psbt_output_set_amount(
+    struct wally_psbt_output *output,
+    uint64_t amount);
+
+/**
+ * Set the script in an output.
+ *
+ * :param output: The output to update.
+ * :param script: The script for this output.
+ * :param script_len: Length of ``script`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_output_set_script(
+    struct wally_psbt_output *output,
+    const unsigned char *script,
+    size_t script_len);
 #endif /* SWIG */
 
 /**
@@ -899,64 +984,6 @@ WALLY_CORE_API int wally_psbt_input_set_claim_script(
     struct wally_psbt_input *input,
     const unsigned char *script,
     size_t script_len);
-
-/**
- * Set the previous txid in an input.
- *
- * :param input: The input to update.
- * :param previous_txid: The previous hash for this input.
- * :param previous_txid_len: Length of ``previous_txid`` in bytes.
- */
-WALLY_CORE_API int wally_psbt_input_set_previous_txid(
-    struct wally_psbt_input *input,
-    const unsigned char *previous_txid,
-    size_t previous_txid_len);
-
-/**
- * Set the output index in an input.
- *
- * :param input: The input to update.
- * :param index: The index of the spent output for this input.
- */
-WALLY_CORE_API int wally_psbt_input_set_output_index(
-    struct wally_psbt_input *input,
-    uint32_t output_index);
-
-/**
- * Set the sequence number in an input.
- *
- * :param input: The input to update.
- * :param sequence: The sequence number for this input.
- */
-WALLY_CORE_API int wally_psbt_input_set_sequence(
-    struct wally_psbt_input *input,
-    uint32_t sequence);
-
-/**
- * Clear the sequence number in an input.
- *
- * :param input: The input to update.
- */
-WALLY_CORE_API int wally_psbt_input_clear_sequence(
-    struct wally_psbt_input *input);
-
-/**
- * Set the required locktime in an input.
- *
- * :param input: The input to update.
- * :param required_locktime: The required locktime for this input.
- */
-WALLY_CORE_API int wally_psbt_input_set_required_locktime(
-    struct wally_psbt_input *input,
-    uint32_t required_locktime);
-
-/**
- * Clear the required locktime in an input.
- *
- * :param input: The input to update.
- */
-WALLY_CORE_API int wally_psbt_input_clear_required_locktime(
-    struct wally_psbt_input *input);
 
 /**
  * Set the blinding pubkey in an elements output.

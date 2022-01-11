@@ -176,11 +176,13 @@ psbt_get_input_final_scriptsig = _wrap_bin(psbt_get_input_final_scriptsig, psbt_
 psbt_get_input_keypath = _wrap_bin(psbt_get_input_keypath, psbt_get_input_keypath_len, resize=True)
 psbt_get_input_signature = _wrap_bin(psbt_get_input_signature, psbt_get_input_signature_len, resize=True)
 psbt_get_input_unknown = _wrap_bin(psbt_get_input_unknown, psbt_get_input_unknown_len, resize=True)
+psbt_get_input_previous_txid = _wrap_bin(psbt_get_input_previous_txid, psbt_get_input_previous_txid_len, resize=True)
 
 psbt_get_output_keypath = _wrap_bin(psbt_get_output_keypath, psbt_get_output_keypath_len, resize=True)
 psbt_get_output_redeem_script = _wrap_bin(psbt_get_output_redeem_script, psbt_get_output_redeem_script_len, resize=True)
 psbt_get_output_witness_script = _wrap_bin(psbt_get_output_witness_script, psbt_get_output_witness_script_len, resize=True)
 psbt_get_output_unknown = _wrap_bin(psbt_get_output_unknown, psbt_get_output_unknown_len, resize=True)
+psbt_get_output_script = _wrap_bin(psbt_get_output_script, psbt_get_output_script_len, resize=True)
 
 psbt_to_bytes = _wrap_bin(psbt_to_bytes, psbt_get_length, resize=True)
 
@@ -277,7 +279,6 @@ if is_elements_build():
     psbt_get_input_txoutproof = _wrap_bin(psbt_get_input_txoutproof, psbt_get_input_txoutproof_len, resize=True)
     psbt_get_input_genesis_blockhash = _wrap_bin(psbt_get_input_genesis_blockhash, psbt_get_input_genesis_blockhash_len, resize=True)
     psbt_get_input_claim_script = _wrap_bin(psbt_get_input_claim_script, psbt_get_input_claim_script_len, resize=True)
-    psbt_get_input_previous_txid = _wrap_bin(psbt_get_input_previous_txid, psbt_get_input_previous_txid_len, resize=True)
 
     psbt_get_output_blinding_pubkey = _wrap_bin(psbt_get_output_blinding_pubkey, psbt_get_output_blinding_pubkey_len, resize=True)
     psbt_get_output_value_commitment = _wrap_bin(psbt_get_output_value_commitment, psbt_get_output_value_commitment_len, resize=True)

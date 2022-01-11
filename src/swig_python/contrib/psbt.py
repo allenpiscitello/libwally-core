@@ -3,7 +3,7 @@ import unittest
 from wallycore import *
 
 SAMPLE = "cHNidP8BAFICAAAAAZ38ZijCbFiZ/hvT3DOGZb/VXXraEPYiCXPfLTht7BJ2AQAAAAD/////AfA9zR0AAAAAFgAUezoAv9wU0neVwrdJAdCdpu8TNXkAAAAATwEENYfPAto/0AiAAAAAlwSLGtBEWx7IJ1UXcnyHtOTrwYogP/oPlMAVZr046QADUbdDiH7h1A3DKmBDck8tZFmztaTXPa7I+64EcvO8Q+IM2QxqT64AAIAAAACATwEENYfPAto/0AiAAAABuQRSQnE5zXjCz/JES+NTzVhgXj5RMoXlKLQH+uP2FzUD0wpel8itvFV9rCrZp+OcFyLrrGnmaLbyZnzB1nHIPKsM2QxqT64AAIABAACAAAEBKwBlzR0AAAAAIgAgLFSGEmxJeAeagU4TcV1l82RZ5NbMre0mbQUIZFuvpjIBBUdSIQKdoSzbWyNWkrkVNq/v5ckcOrlHPY5DtTODarRWKZyIcSEDNys0I07Xz5wf6l0F1EFVeSe+lUKxYusC4ass6AIkwAtSriIGAp2hLNtbI1aSuRU2r+/lyRw6uUc9jkO1M4NqtFYpnIhxENkMak+uAACAAAAAgAAAAAAiBgM3KzQjTtfPnB/qXQXUQVV5J76VQrFi6wLhqyzoAiTACxDZDGpPrgAAgAEAAIAAAAAAACICA57/H1R6HV+S36K6evaslxpL0DukpzSwMVaiVritOh75EO3kXMUAAACAAAAAgAEAAIAA"
-SAMPLE_2 = "cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAA="
+SAMPLE_2 = "cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEBAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAABAwgBAgMEBQYHCAEEAhEiAA=="
 
 class PSBTTests(unittest.TestCase):
 
@@ -135,7 +135,7 @@ class PSBTTests(unittest.TestCase):
         with self.assertRaises(ValueError): #Cannot clear Fallback Locktime Version on NULL PSBT.
             psbt_clear_fallback_locktime(None)
         
-        self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQEBBQEAAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAA=")
+        self.assertEqual(psbt_to_base64(psbt2, 0), "cHNidP8B+wQCAAAAAQIEAwAAAAEEAQEBBQEBAAEOIAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gAQ8EAQAAAAABAwgBAgMEBQYHCAEEAhEiAA==")
         
         psbt_set_tx_modifiable_flags(psbt2, 1)
         
@@ -270,6 +270,22 @@ class PSBTTests(unittest.TestCase):
                             psbt_get_output_unknown,
                             psbt_find_output_unknown,
                             psbt, dummy_unknowns, dummy_pubkey)
+        
+        with self.assertRaises(ValueError): #Cannot set script on V0 PSBT.
+            psbt_set_output_script(psbt, 0, dummy_bytes)
+            
+        self._try_get_set_b(psbt_set_output_script,
+                    psbt_get_output_script,
+                    psbt_get_output_script_len, psbt2, dummy_bytes)
+        
+        with self.assertRaises(ValueError): #Cannot set amount on V0 PSBT.
+            psbt_set_output_amount(psbt, 0, 1234)
+        
+        self._try_get_set_i(psbt_set_output_amount,
+                    None,
+                    psbt_get_output_amount, psbt2, 1234)
+        
+        
         if is_elements_build():
             self._try_get_set_b(psbt_set_output_blinding_pubkey,
                                 psbt_get_output_blinding_pubkey,

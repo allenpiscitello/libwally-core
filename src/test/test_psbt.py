@@ -243,5 +243,16 @@ class PSBTTests(unittest.TestCase):
         self.assertEqual(WALLY_OK, ret)
         self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAABEAQGAAAAARIE/2TNHQA=", base64)
 
+        tx_output = pointer(wally_tx_output())
+        
+        wally_tx_output_init_alloc(1234, b'\x59\x59', 2, tx_output)
+        self.assertEqual(WALLY_OK, ret)
+        ret = wally_psbt_add_output_at(psbt, 0, 0, tx_output)
+        self.assertEqual(WALLY_OK, ret)
+        
+        ret, base64 = wally_psbt_to_base64(psbt, 0)        
+        self.assertEqual(WALLY_OK, ret)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEBAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAABEAQGAAAAARIE/2TNHQABAwjSBAAAAAAAAAEEAllZAA==", base64)
+
 if __name__ == '__main__':
     unittest.main()

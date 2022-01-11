@@ -576,6 +576,23 @@ SET_MAP(wally_psbt_output, keypath, wally_ec_public_key_verify)
 ADD_KEYPATH(wally_psbt_output)
 SET_MAP(wally_psbt_output, unknown, NULL)
 
+int wally_psbt_output_set_amount(struct wally_psbt_output *output, uint64_t amount)
+{
+    if (!output || output->psbt_version == 0)
+        return WALLY_EINVAL;
+    output->amount = amount;
+    output->has_amount = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_output_set_script(struct wally_psbt_output *output, const unsigned char *bytes, size_t len)
+{
+    if (!output || output->psbt_version == 0)
+        return WALLY_EINVAL;
+    return replace_bytes(bytes, len,
+                         &output->script, &output->script_len);
+}
+
 #ifdef BUILD_ELEMENTS
 int wally_psbt_output_set_blinding_pubkey(struct wally_psbt_output *output,
                                           const unsigned char *pub_key,
@@ -607,6 +624,7 @@ static int psbt_output_free(struct wally_psbt_output *output, bool free_parent)
         clear_and_free(output->witness_script, output->witness_script_len);
         wally_map_clear(&output->keypaths);
         wally_map_clear(&output->unknowns);
+        clear_and_free(output->script, output->script_len);
 
 #ifdef BUILD_ELEMENTS
         clear_and_free(output->blinding_pubkey, output->blinding_pubkey_len);
@@ -903,13 +921,14 @@ int wally_psbt_add_output_at(struct wally_psbt *psbt,
                              uint32_t index, uint32_t flags,
                              const struct wally_tx_output *output)
 {
-    int ret;
+    int ret = WALLY_OK;
 
-    if (!psbt || !psbt->tx || psbt->tx->num_outputs != psbt->num_outputs ||
+    if (!psbt || (psbt->version == 0 && (!psbt->tx || psbt->tx->num_outputs != psbt->num_outputs)) ||
         flags || index > psbt->num_outputs || !output)
         return WALLY_EINVAL;
 
-    ret = wally_tx_add_output_at(psbt->tx, index, output);
+    if (psbt->tx)
+        ret = wally_tx_add_output_at(psbt->tx, index, output);
 
     if (ret == WALLY_OK) {
         if (psbt->num_outputs >= psbt->outputs_allocation_len) {
@@ -925,6 +944,16 @@ int wally_psbt_add_output_at(struct wally_psbt *psbt,
         memmove(psbt->outputs + index + 1, psbt->outputs + index,
                 (psbt->num_outputs - index) * sizeof(struct wally_psbt_output));
         wally_clear(psbt->outputs + index, sizeof(struct wally_psbt_output));
+
+        psbt->outputs[index].psbt_version = psbt->version;
+        if (psbt->version >= 2) {
+            if ((ret = replace_bytes(output->script, output->script_len, &psbt->outputs[index].script, &psbt->outputs[index].script_len)) != WALLY_OK) {
+                wally_psbt_remove_output(psbt, index);
+                return ret;
+            }
+            psbt->outputs[index].amount = output->satoshi;
+            psbt->outputs[index].has_amount = 1u;
+        }
         psbt->num_outputs += 1;
     }
     return ret;
@@ -932,11 +961,11 @@ int wally_psbt_add_output_at(struct wally_psbt *psbt,
 
 int wally_psbt_remove_output(struct wally_psbt *psbt, uint32_t index)
 {
-    int ret;
+    int ret = WALLY_OK;
 
-    if (!psbt || !psbt->tx || psbt->tx->num_outputs != psbt->num_outputs)
+    if (!psbt || (psbt->version == 0 && (!psbt->tx || psbt->tx->num_outputs != psbt->num_outputs)))
         ret = WALLY_EINVAL;
-    else
+    else if (psbt->tx)
         ret = wally_tx_remove_output(psbt->tx, index);
     if (ret == WALLY_OK) {
         psbt_output_free(&psbt->outputs[index], false);
@@ -1422,7 +1451,8 @@ static int pull_psbt_output(const unsigned char **cursor, size_t *max,
     /* Read key value */
     pre_key = *cursor;
     while ((key_len = pull_varlength(cursor, max)) != 0) {
-        const unsigned char *key;
+        const unsigned char *key, *val;
+        size_t val_max;
 
         /* Start parsing key */
         pull_subfield_start(cursor, max, key_len, &key, &key_len);
@@ -1439,6 +1469,22 @@ static int pull_psbt_output(const unsigned char **cursor, size_t *max,
             if ((ret = pull_map(cursor, max, key, key_len, &result->keypaths,
                                 wally_ec_public_key_verify)) != WALLY_OK)
                 return ret;
+            break;
+        case PSBT_OUT_AMOUNT:
+            if(result->psbt_version == 0)
+                return WALLY_EINVAL;
+            subfield_nomore_end(cursor, max, key, key_len);
+            pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+            if (val_max != sizeof(result->amount))
+                return WALLY_EINVAL;
+
+            result->amount = pull_le64(&val, &val_max);
+            result->has_amount = 1u;
+            pull_subfield_end(cursor, max, val, val_max);
+            break;
+        case PSBT_OUT_SCRIPT:
+            PSBT_PULL_B(output, script);
             break;
 #ifdef BUILD_ELEMENTS
         case PSBT_PROPRIETARY_TYPE: {
@@ -1492,6 +1538,9 @@ unknown_type:
         }
         pre_key = *cursor;
     }
+
+    if (result->psbt_version >= 2 && (!result->has_amount || !result->script))
+        return WALLY_EINVAL;
 
     return WALLY_OK;
 }
@@ -1724,6 +1773,7 @@ int wally_psbt_from_bytes(const unsigned char *bytes, size_t len,
 
     /* Read outputs */
     for (i = 0; i < result->num_outputs; ++i) {
+        result->outputs[i].psbt_version = result->version;
         ret = pull_psbt_output(&bytes, &len, &result->outputs[i]);
         if (ret != WALLY_OK)
             goto fail;
@@ -2013,6 +2063,17 @@ static int push_psbt_output(unsigned char **cursor, size_t *max,
     /* Keypaths */
     push_typed_map(cursor, max, PSBT_OUT_BIP32_DERIVATION, &output->keypaths);
 
+    if (output->psbt_version >= 2) {
+        if (output->has_amount) {
+            push_psbt_key(cursor, max, PSBT_OUT_AMOUNT, NULL, 0);
+            push_varint(cursor, max, sizeof(output->amount));
+            push_le64(cursor, max, output->amount);
+        }
+        if (output->script != NULL) {
+            push_typed_varbuff(cursor, max, PSBT_OUT_SCRIPT, output->script, output->script_len);
+        }
+    }
+
 #ifdef BUILD_ELEMENTS
     push_elements_varbuff(cursor, max, PSET_OUT_VALUE_COMMITMENT,
                           output->value_commitment, output->value_commitment_len);
@@ -2285,6 +2346,15 @@ static int combine_outputs(struct wally_psbt_output *dst,
 {
     int ret;
 
+    if (dst->script_len != 0 && dst->script_len != src->script_len)
+        return WALLY_EINVAL;
+    if (memcmp(dst->script, src->script, dst->script_len) != 0)
+        return WALLY_EINVAL;
+    if (dst->has_amount && !src->has_amount)
+        return WALLY_EINVAL;
+    if (dst->has_amount && src->has_amount && dst->amount != src->amount)
+        return WALLY_EINVAL;
+
     if ((ret = map_extend(&dst->keypaths, &src->keypaths, wally_ec_public_key_verify)) != WALLY_OK)
         return ret;
     if ((ret = map_extend(&dst->unknowns, &src->unknowns, NULL)) != WALLY_OK)
@@ -2292,6 +2362,11 @@ static int combine_outputs(struct wally_psbt_output *dst,
 
     COMBINE_BYTES(output, redeem_script);
     COMBINE_BYTES(output, witness_script);
+    COMBINE_BYTES(output, script);
+    if (!dst->has_amount && src->has_amount) {
+        dst->amount = src->amount;
+        dst->has_amount = src->has_amount;
+    }
 
 #ifdef BUILD_ELEMENTS
     COMBINE_BYTES(output, blinding_pubkey);
@@ -2326,8 +2401,10 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
         ret = combine_inputs(&psbt->inputs[i], &src->inputs[i]);
     }
 
-    for (i = 0; ret == WALLY_OK && i < psbt->num_outputs; ++i)
+    for (i = 0; ret == WALLY_OK && i < psbt->num_outputs; ++i) {
+        psbt->outputs[i].psbt_version = psbt->version;
         ret = combine_outputs(&psbt->outputs[i], &src->outputs[i]);
+    }
 
     if (ret == WALLY_OK)
         ret = map_extend(&psbt->unknowns, &src->unknowns, NULL);
@@ -2399,6 +2476,27 @@ int psbt_build_tx(const struct wally_psbt *psbt, struct wally_tx **tx)
             if ((ret = wally_tx_add_input(*tx, input)) != WALLY_OK) {
                 wally_tx_free(*tx);
                 wally_tx_input_free(input);
+                return ret;
+            }
+        }
+    }
+
+    for (size_t i = 0; i < psbt->num_outputs; i++) {
+        struct wally_psbt_output *psbt_output = &psbt->outputs[i];
+        if (is_elements) {
+            return WALLY_EINVAL;
+        }
+        else {
+            struct wally_tx_output *output;
+
+            if ((ret = wally_tx_output_init_alloc(psbt_output->amount, psbt_output->script, psbt_output->script_len, &output)) != WALLY_OK) {
+                wally_tx_free(*tx);
+                return ret;
+            }
+
+            if ((ret = wally_tx_add_output(*tx, output)) != WALLY_OK) {
+                wally_tx_output_free(output);
+                wally_tx_free(*tx);
                 return ret;
             }
         }
@@ -3235,11 +3333,15 @@ PSBT_GET_B(output, redeem_script)
 PSBT_GET_B(output, witness_script)
 PSBT_GET_M(output, keypath)
 PSBT_GET_M(output, unknown)
+PSBT_GET_I(output, amount, uint64_t)
+PSBT_GET_B(output, script)
 
 PSBT_SET_B(output, redeem_script)
 PSBT_SET_B(output, witness_script)
 PSBT_SET_S(output, keypaths, wally_map)
 PSBT_SET_S(output, unknowns, wally_map)
+PSBT_SET_I(output, amount, uint64_t)
+PSBT_SET_B(output, script)
 #ifdef BUILD_ELEMENTS
 PSBT_GET_B(output, blinding_pubkey)
 PSBT_GET_B(output, value_commitment)
