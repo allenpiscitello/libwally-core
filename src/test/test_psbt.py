@@ -41,16 +41,25 @@ class PSBTTests(unittest.TestCase):
 
         for creator in creators:
             psbt = pointer(wally_psbt())
-            self.assertEqual(WALLY_OK, wally_psbt_init_alloc(0, 2, 2, 0, psbt))
+            self.assertEqual(WALLY_OK, wally_psbt_init_alloc(creator["version"], 2, 3, 0, psbt))
 
             tx = pointer(wally_tx())
             self.assertEqual(WALLY_OK, wally_tx_init_alloc(2, 0, 2, 2, tx))
+            index = 0
             for txin in creator['inputs']:
                 tx_in = pointer(wally_tx_input())
                 txid, txid_len = make_cbuffer(txin['txid'])
                 ret = wally_tx_input_init_alloc(txid[::-1], txid_len, txin['vout'], 0xffffffff, None, 0, None, tx_in)
                 self.assertEqual(WALLY_OK, ret)
-                self.assertEqual(WALLY_OK, wally_tx_add_input(tx, tx_in))
+                
+                if (creator["version"] == 0):
+                    self.assertEqual(WALLY_OK, wally_tx_add_input(tx, tx_in))
+                else:
+                    self.assertEqual(WALLY_OK, wally_psbt_add_input_at(psbt, index, 0, tx_in))
+                    
+                index += 1
+                
+            index = 0
             for txout in creator['outputs']:
                 addr = txout['addr']
                 amt = txout['amt']
@@ -59,9 +68,16 @@ class PSBTTests(unittest.TestCase):
                 self.assertEqual(WALLY_OK, ret)
                 output = pointer(wally_tx_output())
                 self.assertEqual(WALLY_OK, wally_tx_output_init_alloc(amt, spk, written, output))
-                self.assertEqual(WALLY_OK, wally_tx_add_output(tx, output))
+                if (creator["version"] == 0):
+                    self.assertEqual(WALLY_OK, wally_tx_add_output(tx, output))
+                else:
+                    self.assertEqual(WALLY_OK, wally_psbt_add_output_at(psbt, index, 0, output))
+    
+                index += 1            
 
-            self.assertEqual(WALLY_OK, wally_psbt_set_global_tx(psbt, tx))
+            if (creator["version"] == 0):
+                self.assertEqual(WALLY_OK, wally_psbt_set_global_tx(psbt, tx))
+
             ret, ser = wally_psbt_to_base64(psbt, 0)
             self.assertEqual(WALLY_OK, ret)
             self.assertEqual(creator['result'], ser)
