@@ -3009,13 +3009,25 @@ fail:
 int wally_psbt_finalize(struct wally_psbt *psbt)
 {
     size_t i;
+    int ret;
 
-    if (!psbt || !psbt->tx || psbt->tx->num_inputs != psbt->num_inputs)
+    struct wally_tx *tx;
+
+    if (!psbt || (psbt->version == 0 && (!psbt->tx || psbt->tx->num_inputs != psbt->num_inputs)))
         return WALLY_EINVAL;
+
+    if (psbt->tx) {
+        if ((ret = wally_tx_clone_alloc(psbt->tx, 0, &tx)) != WALLY_OK)
+            return ret;
+    }
+    else {
+        if ((ret = psbt_build_tx(psbt, &tx)) != WALLY_OK)
+            return ret;
+    }
 
     for (i = 0; i < psbt->num_inputs; ++i) {
         struct wally_psbt_input *input = &psbt->inputs[i];
-        const uint32_t utxo_index = psbt->tx->inputs[i].index;
+        const uint32_t utxo_index = tx->inputs[i].index;
 
         /* Script for this input. originally set to the input's scriptPubKey, but in the case of a p2sh/p2wsh
          * input, it will be eventually be set to the unhashed script, if known */
@@ -3082,6 +3094,8 @@ int wally_psbt_finalize(struct wally_psbt *psbt)
         wally_map_clear(&input->signatures);
         input->sighash = 0;
     }
+
+    wally_tx_free(tx);
     return WALLY_OK;
 }
 
@@ -3093,13 +3107,19 @@ int wally_psbt_extract(const struct wally_psbt *psbt, struct wally_tx **output)
 
     TX_CHECK_OUTPUT;
 
-    if (!psbt || !psbt->tx || !psbt->num_inputs || !psbt->num_outputs ||
-        psbt->tx->num_inputs != psbt->num_inputs ||
-        psbt->tx->num_outputs != psbt->num_outputs)
+    if (!psbt || (psbt->version == 0 && (!psbt->tx || !psbt->num_inputs || !psbt->num_outputs ||
+                                         psbt->tx->num_inputs != psbt->num_inputs ||
+                                         psbt->tx->num_outputs != psbt->num_outputs)))
         return WALLY_EINVAL;
 
-    if ((ret = tx_clone_alloc(psbt->tx, &result)) != WALLY_OK)
-        return ret;
+    if (psbt->tx) {
+        if ((ret = wally_tx_clone_alloc(psbt->tx, 0, &result)) != WALLY_OK)
+            return ret;
+    }
+    else {
+        if ((ret = psbt_build_tx(psbt, &result)) != WALLY_OK)
+            return ret;
+    }
 
     for (i = 0; i < psbt->num_inputs; ++i) {
         const struct wally_psbt_input *input = &psbt->inputs[i];
