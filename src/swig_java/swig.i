@@ -491,6 +491,8 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_void__(wally_psbt_add_input_at);
 %returns_void__(wally_psbt_add_output_at);
 %returns_void__(wally_psbt_clear_fallback_locktime);
+%returns_void__(wally_psbt_clear_input_required_locktime);
+%returns_void__(wally_psbt_clear_input_sequence);
 %returns_void__(wally_psbt_clear_input_value);
 %returns_struct(wally_psbt_clone_alloc, wally_psbt);
 %rename("psbt_clone") wally_psbt_clone_alloc;
@@ -530,6 +532,8 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_struct(wally_psbt_get_input_pegin_tx_alloc, wally_tx);
 %returns_size_t(wally_psbt_get_input_previous_txid);
 %returns_size_t(wally_psbt_get_input_previous_txid_len);
+%returns_size_t(wally_psbt_get_input_required_locktime);
+%rename("_psbt_get_input_sequence") wally_psbt_get_input_sequence;
 %returns_size_t(wally_psbt_get_input_signatures_size);
 %returns_size_t(wally_psbt_get_input_signature);
 %returns_size_t(wally_psbt_get_input_signature_len);
@@ -602,6 +606,8 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_void__(wally_psbt_set_input_pegin_tx);
 %returns_void__(wally_psbt_set_input_previous_txid);
 %returns_void__(wally_psbt_set_input_redeem_script);
+%returns_void__(wally_psbt_set_input_required_locktime);
+%returns_void__(wally_psbt_set_input_sequence);
 %returns_void__(wally_psbt_set_input_sighash);
 %returns_void__(wally_psbt_set_input_signatures);
 %returns_void__(wally_psbt_set_input_txoutproof);

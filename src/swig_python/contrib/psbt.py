@@ -203,6 +203,22 @@ class PSBTTests(unittest.TestCase):
                             psbt_get_input_output_index,
                             psbt2, 1234)
         
+        
+        with self.assertRaises(ValueError): #Cannot set sequence on V0 PSBT.
+            psbt_set_input_sequence(psbt, 0, 1234)
+            
+        self._try_get_set_i(psbt_set_input_sequence,
+                            psbt_clear_input_sequence,
+                            psbt_get_input_sequence,
+                            psbt2, 1234)
+        
+        with self.assertRaises(ValueError): #Cannot set required locktime on V0 PSBT.
+            psbt_set_input_required_locktime(psbt, 0, 1234)
+            
+        self._try_get_set_i(psbt_set_input_required_locktime,
+                            psbt_clear_input_required_locktime,
+                            psbt_get_input_required_locktime,
+                            psbt2, 1234)
 
         if is_elements_build():
             self._try_set(psbt_set_input_value, psbt, 1234567, 0)

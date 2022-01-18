@@ -56,6 +56,8 @@
 #define PSBT_IN_REQUIRED_TIME_LOCKTIME 0x11
 #define PSBT_IN_REQUIRED_HEIGHT_LOCKTIME 0x012
 
+#define PSBT_LOCKTIME_MIN_TIMESTAMP 500000000
+
 #define PSBT_OUT_REDEEM_SCRIPT 0x00
 #define PSBT_OUT_WITNESS_SCRIPT 0x01
 #define PSBT_OUT_BIP32_DERIVATION 0x02
@@ -472,6 +474,42 @@ int wally_psbt_input_set_output_index(struct wally_psbt_input *input, uint32_t o
     return WALLY_OK;
 }
 
+int wally_psbt_input_set_sequence(struct wally_psbt_input *input, uint32_t sequence)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->sequence = sequence;
+    input->has_sequence = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_clear_sequence(struct wally_psbt_input *input)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->sequence = 0;
+    input->has_sequence = 0u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_set_required_locktime(struct wally_psbt_input *input, uint32_t required_locktime)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->required_locktime = required_locktime;
+    input->has_required_locktime = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_clear_required_locktime(struct wally_psbt_input *input)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->required_locktime = 0;
+    input->has_required_locktime = 0u;
+    return WALLY_OK;
+}
+
 #ifdef BUILD_ELEMENTS
 int wally_psbt_input_set_value(struct wally_psbt_input *input, uint64_t value)
 {
@@ -836,6 +874,8 @@ int wally_psbt_add_input_at(struct wally_psbt *psbt,
             psbt->inputs[index].previous_txid_len = WALLY_TXHASH_LEN;
             psbt->inputs[index].output_index = input->index;
             psbt->inputs[index].psbt_version = psbt->version;
+            psbt->inputs[index].sequence = input->sequence;
+            psbt->inputs[index].has_sequence = 1u;
         }
         psbt->num_inputs += 1;
     }
@@ -1233,7 +1273,58 @@ static int pull_psbt_input(const unsigned char **cursor, size_t *max,
             pull_subfield_end(cursor, max, val, val_max);
 
             break;
+        }
+        case PSBT_IN_SEQUENCE: {
+            if (result->psbt_version == 0 || result->has_sequence)
+                return WALLY_EINVAL;
 
+            subfield_nomore_end(cursor, max, key, key_len);
+            pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+            if (val_max != sizeof(result->sequence))
+                return WALLY_EINVAL;
+
+            result->sequence = pull_le32(&val, &val_max);
+            result->has_sequence = 1u;
+            pull_subfield_end(cursor, max, val, val_max);
+
+            break;
+        }
+        case PSBT_IN_REQUIRED_TIME_LOCKTIME: {
+            if (result->psbt_version == 0 || result->has_required_locktime)
+                return WALLY_EINVAL;
+
+            subfield_nomore_end(cursor, max, key, key_len);
+            pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+            if (val_max != sizeof(result->required_locktime))
+                return WALLY_EINVAL;
+
+            result->required_locktime = pull_le32(&val, &val_max);
+            if (result->required_locktime < PSBT_LOCKTIME_MIN_TIMESTAMP)
+                return WALLY_EINVAL;
+            result->has_required_locktime = 1u;
+            pull_subfield_end(cursor, max, val, val_max);
+
+            break;
+        }
+        case PSBT_IN_REQUIRED_HEIGHT_LOCKTIME: {
+            if (result->psbt_version == 0 || result->has_required_locktime)
+                return WALLY_EINVAL;
+
+            subfield_nomore_end(cursor, max, key, key_len);
+            pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+            if (val_max != sizeof(result->required_locktime))
+                return WALLY_EINVAL;
+
+            result->required_locktime = pull_le32(&val, &val_max);
+            if (result->required_locktime >= PSBT_LOCKTIME_MIN_TIMESTAMP)
+                return WALLY_EINVAL;
+            result->has_required_locktime = 1u;
+            pull_subfield_end(cursor, max, val, val_max);
+
+            break;
         }
 
 #ifdef BUILD_ELEMENTS
@@ -1856,6 +1947,24 @@ static int push_psbt_input(unsigned char **cursor, size_t *max, uint32_t flags,
         push_psbt_key(cursor, max, PSBT_IN_OUTPUT_INDEX, NULL, 0);
         push_varint(cursor, max, sizeof(input->output_index));
         push_le32(cursor, max, input->output_index);
+
+        if (input->has_sequence) {
+            push_psbt_key(cursor, max, PSBT_IN_SEQUENCE, NULL, 0);
+            push_varint(cursor, max, sizeof(input->sequence));
+            push_le32(cursor, max, input->sequence);
+        }
+
+        if (input->has_required_locktime && input->required_locktime >= PSBT_LOCKTIME_MIN_TIMESTAMP) {
+            push_psbt_key(cursor, max, PSBT_IN_REQUIRED_TIME_LOCKTIME, NULL, 0);
+            push_varint(cursor, max, sizeof(input->required_locktime));
+            push_le32(cursor, max, input->required_locktime);
+        }
+
+        if (input->has_required_locktime && input->required_locktime < PSBT_LOCKTIME_MIN_TIMESTAMP) {
+            push_psbt_key(cursor, max, PSBT_IN_REQUIRED_HEIGHT_LOCKTIME, NULL, 0);
+            push_varint(cursor, max, sizeof(input->required_locktime));
+            push_le32(cursor, max, input->required_locktime);
+        }
     }
 #ifdef BUILD_ELEMENTS
     /* Confidential Assets blinding data */
@@ -2145,6 +2254,15 @@ static int combine_inputs(struct wally_psbt_input *dst,
     if (!dst->output_index && src->output_index)
         dst->output_index = src->output_index;
 
+    if (!dst->has_sequence && src->has_sequence) {
+        dst->sequence = src->sequence;
+        dst->has_sequence = 1u;
+    }
+    if (!dst->has_required_locktime && src->has_required_locktime) {
+        dst->required_locktime = src->required_locktime;
+        dst->has_required_locktime = 1u;
+    }
+
 #ifdef BUILD_ELEMENTS
     if (!dst->has_value && src->has_value) {
         dst->value = src->value;
@@ -2219,7 +2337,32 @@ static int psbt_combine(struct wally_psbt *psbt, const struct wally_psbt *src)
 
 int psbt_calculate_locktime(const struct wally_psbt *psbt, uint32_t *locktime)
 {
-    *locktime = psbt->fallback_locktime;
+    bool has_time_locktime = false, has_height_locktime = false;
+
+    for (size_t i = 0; i < psbt->num_inputs; i++) {
+        if (psbt->inputs[i].has_required_locktime) {
+            if (psbt->inputs[i].required_locktime < PSBT_LOCKTIME_MIN_TIMESTAMP) {
+                if (has_time_locktime)
+                    return WALLY_EINVAL;
+                has_height_locktime = true;
+                *locktime = *locktime > psbt->inputs[i].required_locktime ? *locktime : psbt->inputs[i].required_locktime;
+            }
+            else {
+                if (has_height_locktime)
+                    return WALLY_EINVAL;
+                has_time_locktime = true;
+                *locktime = *locktime > psbt->inputs[i].required_locktime ? *locktime : psbt->inputs[i].required_locktime;
+            }
+        }
+    }
+
+    if (!has_time_locktime && !has_height_locktime) {
+        if (psbt->has_fallback_locktime)
+            *locktime = psbt->fallback_locktime;
+        else
+            *locktime = 0;
+    }
+
     return WALLY_OK;
 }
 
@@ -2245,7 +2388,8 @@ int psbt_build_tx(const struct wally_psbt *psbt, struct wally_tx **tx)
         }
         else {
             struct wally_tx_input *input;
-            uint32_t sequence = WALLY_TX_SEQUENCE_FINAL;
+            uint32_t sequence;
+            sequence = psbt_input->has_sequence ? psbt_input->sequence : WALLY_TX_SEQUENCE_FINAL;
 
             if ((ret = wally_tx_input_init_alloc(psbt_input->previous_txid, psbt_input->previous_txid_len, psbt_input->output_index, sequence, NULL, 0, NULL, &input)) != WALLY_OK) {
                 wally_tx_free(*tx);
@@ -3033,6 +3177,8 @@ PSBT_GET_M(input, unknown)
 PSBT_GET_I(input, sighash, size_t)
 PSBT_GET_B(input, previous_txid)
 PSBT_GET_I(input, output_index, size_t)
+PSBT_GET_I(input, sequence, size_t)
+PSBT_GET_I(input, required_locktime, size_t)
 
 PSBT_SET_S(input, utxo, wally_tx)
 PSBT_SET_S(input, witness_utxo, wally_tx_output)
@@ -3046,6 +3192,14 @@ PSBT_SET_S(input, unknowns, wally_map)
 PSBT_SET_I(input, sighash, uint32_t)
 PSBT_SET_B(input, previous_txid)
 PSBT_SET_I(input, output_index, uint32_t)
+PSBT_SET_I(input, sequence, uint32_t)
+int wally_psbt_clear_input_sequence(struct wally_psbt *psbt, size_t index) {
+    return wally_psbt_input_clear_sequence(psbt_get_input(psbt, index));
+}
+PSBT_SET_I(input, required_locktime, uint32_t)
+int wally_psbt_clear_input_required_locktime(struct wally_psbt *psbt, size_t index) {
+    return wally_psbt_input_clear_required_locktime(psbt_get_input(psbt, index));
+}
 
 #ifdef BUILD_ELEMENTS
 int wally_psbt_has_input_value(const struct wally_psbt *psbt, size_t index, size_t *written) {

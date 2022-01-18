@@ -365,6 +365,10 @@
       return checkBuffer(buf, len);
   }
 
+  public final static long psbt_get_input_sequence(final Object psbt, final int index) {
+    return _psbt_get_input_sequence(psbt, index) & 0x00000000ffffffffL;
+  }
+
   public final static byte[] psbt_get_input_signature(Object psbt, long idx, long sub_idx) {
       final byte[] buf = new byte[psbt_get_input_signature_len(psbt, idx, sub_idx)];
       if (buf.length == 0) return buf;

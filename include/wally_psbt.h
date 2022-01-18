@@ -58,6 +58,10 @@ struct wally_psbt_input {
     unsigned char *previous_txid;
     size_t previous_txid_len;
     uint32_t output_index;
+    uint32_t sequence;
+    uint32_t has_sequence;
+    uint32_t required_locktime;
+    uint32_t has_required_locktime;
 #ifdef BUILD_ELEMENTS
     uint64_t value;
     uint32_t has_value;
@@ -917,6 +921,42 @@ WALLY_CORE_API int wally_psbt_input_set_previous_txid(
 WALLY_CORE_API int wally_psbt_input_set_output_index(
     struct wally_psbt_input *input,
     uint32_t output_index);
+
+/**
+ * Set the sequence number in an input.
+ *
+ * :param input: The input to update.
+ * :param sequence: The sequence number for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_sequence(
+    struct wally_psbt_input *input,
+    uint32_t sequence);
+
+/**
+ * Clear the sequence number in an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_sequence(
+    struct wally_psbt_input *input);
+
+/**
+ * Set the required locktime in an input.
+ *
+ * :param input: The input to update.
+ * :param required_locktime: The required locktime for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_required_locktime(
+    struct wally_psbt_input *input,
+    uint32_t required_locktime);
+
+/**
+ * Clear the required locktime in an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_required_locktime(
+    struct wally_psbt_input *input);
 
 /**
  * Set the blinding pubkey in an elements output.

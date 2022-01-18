@@ -226,16 +226,22 @@ class PSBTTests(unittest.TestCase):
         tx_input = pointer(wally_tx_input())
         
         txhash, txhash_len = make_cbuffer("e7f25add4560021c77c4944f92739025fddbf99816d79c06d219268ca9f4b7e7")
-        ret = wally_tx_input_init_alloc(txhash, txhash_len, 5, 0, b'\x59', 1, None, tx_input)
+        ret = wally_tx_input_init_alloc(txhash, txhash_len, 5, 6, b'\x59', 1, None, tx_input)
         self.assertEqual(WALLY_OK, ret)
         ret = wally_psbt_add_input_at(psbt, 0, 0, tx_input)
         self.assertEqual(WALLY_OK, ret)
+        
+        ret = wally_psbt_input_set_required_locktime(psbt.contents.inputs[0], 500000000)
+        self.assertEqual(WALLY_OK, ret)
         ret, base64 = wally_psbt_to_base64(psbt, 0)        
         self.assertEqual(WALLY_OK, ret)
-        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAAA", base64)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAABEAQGAAAAAREEAGXNHQA=", base64)
         
-        
-        
+        ret = wally_psbt_input_set_required_locktime(psbt.contents.inputs[0], 499999999)
+        self.assertEqual(WALLY_OK, ret)
+        ret, base64 = wally_psbt_to_base64(psbt, 0)        
+        self.assertEqual(WALLY_OK, ret)
+        self.assertEqual("cHNidP8B+wQCAAAAAQIEewAAAAEEAQEBBQEAAQYBAwABDiDn8lrdRWACHHfElE+Sc5Al/dv5mBbXnAbSGSaMqfS35wEPBAUAAAABEAQGAAAAARIE/2TNHQA=", base64)
 
 if __name__ == '__main__':
     unittest.main()

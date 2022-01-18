@@ -1531,6 +1531,16 @@ inline int psbt_elements_init_alloc(uint32_t version, size_t inputs_allocation_l
     return ret;
 }
 
+inline int psbt_input_clear_required_locktime(struct wally_psbt_input* input) {
+    int ret = ::wally_psbt_input_clear_required_locktime(input);
+    return ret;
+}
+
+inline int psbt_input_clear_sequence(struct wally_psbt_input* input) {
+    int ret = ::wally_psbt_input_clear_sequence(input);
+    return ret;
+}
+
 inline int psbt_input_clear_value(struct wally_psbt_input* input) {
     int ret = ::wally_psbt_input_clear_value(input);
     return ret;
@@ -1575,6 +1585,18 @@ inline int psbt_input_set_pegin_tx(const INPUT& input, const struct wally_tx* pe
 template <class INPUT, class PREVIOUS_TXID>
 inline int psbt_input_set_previous_txid(const INPUT& input, const PREVIOUS_TXID& previous_txid) {
     int ret = ::wally_psbt_input_set_previous_txid(detail::get_p(input), previous_txid.data(), previous_txid.size());
+    return ret;
+}
+
+template <class INPUT>
+inline int psbt_input_set_required_locktime(const INPUT& input, uint32_t required_locktime) {
+    int ret = ::wally_psbt_input_set_required_locktime(detail::get_p(input), required_locktime);
+    return ret;
+}
+
+template <class INPUT>
+inline int psbt_input_set_sequence(const INPUT& input, uint32_t sequence) {
+    int ret = ::wally_psbt_input_set_sequence(detail::get_p(input), sequence);
     return ret;
 }
 

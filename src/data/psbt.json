@@ -72,9 +72,14 @@
             "len": 35
         },
         {
-            "comment": "PSBT Version 2 (1 input, no outputs)",
-            "psbt": "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEBAQUBAAABDiABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fIAEPBAECAwQA",
-            "len": 78
+            "comment": "PSBT Version 2 (1 input, no outputs) w/ height locktime",
+            "psbt": "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEBAQUBAAABDiABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fIAEPBAECAwQBEAQEAwIBARIEBQYHCAA=",
+            "len": 92
+        },
+        {
+            "comment": "PSBT Version 2 (1 input, no outputs) w/ time locktime",
+            "psbt": "cHNidP8B+wQCAAAAAQIEAgAAAAEDBAECAwQBBAEBAQUBAAABDiABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fIAEPBAECAwQBEAQEAwIBAREENGkfYQA=",
+            "len": 92
         }
     ],
     "creator" : [
