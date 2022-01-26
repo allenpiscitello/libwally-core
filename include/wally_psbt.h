@@ -131,6 +131,11 @@ struct wally_psbt {
     uint32_t fallback_locktime;
     uint32_t has_fallback_locktime;
     uint8_t tx_modifiable_flags;
+#ifdef BUILD_ELEMENTS
+    unsigned char *scalar;
+    size_t scalar_len;
+    uint8_t elements_tx_modifiable_flags;
+#endif /* BUILD_ELEMENTS */
 };
 #endif /* SWIG */
 
@@ -690,6 +695,30 @@ WALLY_CORE_API int wally_psbt_set_tx_modifiable_flags(
     struct wally_psbt *psbt,
     uint8_t tx_modifiable_flags);
 
+#ifdef BUILD_ELEMENTS
+/**
+ * Set the scalar for a PSBT.
+ *
+ * :param psbt: The PSBT to set the scalar for.
+ * :param scalar: The blinding scalar for the PSBT.
+ * :param scalar_len: Length of ``scalar`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_set_scalar(
+    struct wally_psbt *psbt,
+    unsigned char *scalar,
+    size_t scalar_len);
+
+/**
+ * Set the tx modifiable flags for a PSBT.
+ *
+ * :param psbt: The PSBT to set the Elements-specific tx modifiable flags for.
+ * :param elements_tx_modifiable_flags: The Elements-specific modifiable flags for the PSBT.
+ */
+WALLY_CORE_API int wally_psbt_set_elements_tx_modifiable_flags(
+    struct wally_psbt *psbt,
+    uint8_t elements_tx_modifiable_flags);
+
+#endif /* BUILD_ELEMENTS */
 /**
  * Add a transaction input to PBST at a given position.
  *

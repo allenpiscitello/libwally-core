@@ -141,12 +141,33 @@ class PSBTTests(unittest.TestCase):
         
         self.assertEqual(psbt_get_tx_modifiable_flags(psbt2), 1)
         
+        with self.assertRaises(ValueError): #Cannot get TX Modifiable Flags on NULL PSBT.
+            psbt_get_tx_modifiable_flags(None)
+    
         with self.assertRaises(ValueError): #Cannot set TX Modifiable Flags on NULL PSBT.
             psbt_set_tx_modifiable_flags(None, 3)
             
         with self.assertRaises(ValueError): #Cannot set TX Modifiable Flags on V0 PSBT.
             psbt_set_tx_modifiable_flags(psbt, 1)
         
+        psbt_set_scalar(psbt2, dummy_bytes)
+        self.assertEqual(psbt_get_scalar_len(psbt2), 32)
+        self.assertEqual(psbt_get_scalar(psbt2), dummy_bytes)
+        
+        
+        with self.assertRaises(ValueError): #Cannot set scalar on NULL PSBT.   
+            psbt_set_scalar(None, dummy_bytes)
+            
+        with self.assertRaises(ValueError): #Cannot get scalar len on NULL PSBT.   
+            psbt_get_scalar_len(None)
+            
+        with self.assertRaises(ValueError): #Cannot get scalar on NULL PSBT.   
+            psbt_get_scalar(None)
+            
+            
+        with self.assertRaises(ValueError): #Cannot set scalar on V0 PSBT.   
+            psbt_set_scalar(psbt, dummy_bytes)
+            
         #
         # Inputs
         #

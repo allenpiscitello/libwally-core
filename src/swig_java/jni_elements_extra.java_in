@@ -55,6 +55,11 @@
       return buf;
   }
 
+  public final static long psbt_get_elements_tx_modifiable_flags(final Object tx_input) {
+      return psbt_get_elements_tx_modifiable_flags(tx_input) & 0x000000000000000fL;
+  }
+
+
   public final static byte[] psbt_get_input_abf(Object psbt, long idx) {
       final byte[] buf = new byte[psbt_get_input_abf_len(psbt, idx)];
       if (buf.length == 0) return buf;
@@ -87,20 +92,6 @@
       final byte[] buf = new byte[psbt_get_input_txoutproof_len(psbt, idx)];
       if (buf.length == 0) return buf;
       final int len = psbt_get_input_txoutproof(psbt, idx, buf);
-      return checkBuffer(buf, len);
-  }
-
-  public final static byte[] psbt_get_input_vbf(Object psbt, long idx) {
-      final byte[] buf = new byte[psbt_get_input_vbf_len(psbt, idx)];
-      if (buf.length == 0) return buf;
-      final int len = psbt_get_input_vbf(psbt, idx, buf);
-      return checkBuffer(buf, len);
-  }
-
-  public final static byte[] psbt_get_output_abf(Object psbt, long idx) {
-      final byte[] buf = new byte[psbt_get_output_abf_len(psbt, idx)];
-      if (buf.length == 0) return buf;
-      final int len = psbt_get_output_abf(psbt, idx, buf);
       return checkBuffer(buf, len);
   }
 
@@ -143,13 +134,6 @@
       final byte[] buf = new byte[psbt_get_output_value_commitment_len(psbt, idx)];
       if (buf.length == 0) return buf;
       final int len = psbt_get_output_value_commitment(psbt, idx, buf);
-      return checkBuffer(buf, len);
-  }
-
-  public final static byte[] psbt_get_output_vbf(Object psbt, long idx) {
-      final byte[] buf = new byte[psbt_get_output_vbf_len(psbt, idx)];
-      if (buf.length == 0) return buf;
-      final int len = psbt_get_output_vbf(psbt, idx, buf);
       return checkBuffer(buf, len);
   }
 

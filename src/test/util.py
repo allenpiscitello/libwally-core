@@ -212,7 +212,10 @@ class wally_psbt(Structure):
                 ('has_tx_version', c_uint32),
                 ('fallback_locktime', c_uint32),
                 ('has_fallback_locktime', c_uint32),
-                ('tx_modifiable', c_uint8)]
+                ('tx_modifiable', c_uint8),
+                ('scalar', c_void_p),
+                ('scalar_len', c_size_t),
+                ('elements_tx_modifiable', c_uint8)]
 
 for f in (
     # Internal functions
@@ -408,8 +411,10 @@ for f in (
     ('wally_psbt_output_set_witness_script', c_int, [POINTER(wally_psbt_output), c_void_p, c_ulong]),
     ('wally_psbt_remove_input', c_int, [POINTER(wally_psbt), c_uint]),
     ('wally_psbt_remove_output', c_int, [POINTER(wally_psbt), c_uint]),
+    ('wally_psbt_set_elements_tx_modifiable_flags', c_int, [POINTER(wally_psbt), c_uint8]),
     ('wally_psbt_set_fallback_locktime', c_int, [POINTER(wally_psbt), c_uint]),
     ('wally_psbt_set_global_tx', c_int, [POINTER(wally_psbt), POINTER(wally_tx)]),
+    ('wally_psbt_set_scalar', c_int, [POINTER(wally_psbt), c_void_p, c_ulong]),
     ('wally_psbt_set_tx_modifiable_flags', c_int, [POINTER(wally_psbt), c_uint8]),
     ('wally_psbt_set_tx_version', c_int, [POINTER(wally_psbt), c_uint]),
     ('wally_psbt_sign', c_int, [POINTER(wally_psbt), c_void_p, c_ulong, c_uint]),

@@ -1678,6 +1678,18 @@ inline int psbt_output_set_vbf(const OUTPUT& output, const VBF& vbf) {
     return ret;
 }
 
+template <class PSBT>
+inline int psbt_set_elements_tx_modifiable_flags(const PSBT& psbt) {
+    int ret = ::wally_psbt_set_elements_tx_modifiable_flags(detail::get_p(psbt));
+    return ret;
+}
+
+template <class PSBT, class SCALAR>
+inline int psbt_set_scalar(const PSBT& psbt, SCALAR& scalar) {
+    int ret = ::wally_psbt_set_scalar(detail::get_p(psbt), scalar.data(), scalar.size());
+    return ret;
+}
+
 template <class TX, class TXHASH, class SCRIPT, class WITNESS, class NONCE, class ENTROPY, class ISSUANCE_AMOUNT, class INFLATION_KEYS, class ISSUANCE_AMOUNT_RANGEPROOF, class INFLATION_KEYS_RANGEPROOF, class PEGIN_WITNESS>
 inline int tx_add_elements_raw_input(const TX& tx, const TXHASH& txhash, uint32_t utxo_index, uint32_t sequence, const SCRIPT& script, const WITNESS& witness, const NONCE& nonce, const ENTROPY& entropy, const ISSUANCE_AMOUNT& issuance_amount, const INFLATION_KEYS& inflation_keys, const ISSUANCE_AMOUNT_RANGEPROOF& issuance_amount_rangeproof, const INFLATION_KEYS_RANGEPROOF& inflation_keys_rangeproof, const PEGIN_WITNESS& pegin_witness, uint32_t flags) {
     int ret = ::wally_tx_add_elements_raw_input(detail::get_p(tx), txhash.data(), txhash.size(), utxo_index, sequence, script.data(), script.size(), detail::get_p(witness), nonce.data(), nonce.size(), entropy.data(), entropy.size(), issuance_amount.data(), issuance_amount.size(), inflation_keys.data(), inflation_keys.size(), issuance_amount_rangeproof.data(), issuance_amount_rangeproof.size(), inflation_keys_rangeproof.data(), inflation_keys_rangeproof.size(), detail::get_p(pegin_witness), flags);

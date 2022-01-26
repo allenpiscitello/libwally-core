@@ -10,6 +10,10 @@ class PSETTests(unittest.TestCase):
         with open(root_dir + 'src/data/pset.json', 'r') as f:
             d = json.load(f)
             valids = d['valid']
+            invalids = d['invalid']
+
+        for invalid in invalids:
+            self.assertEqual(WALLY_EINVAL, wally_psbt_from_base64(utf8(invalid['pset']), pointer(wally_psbt())))
 
         for valid in valids:
             psbt_out = pointer(wally_psbt())
