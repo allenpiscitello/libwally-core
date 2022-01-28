@@ -1577,23 +1577,6 @@ inline int psbt_elements_init_alloc(uint32_t version, size_t inputs_allocation_l
     return ret;
 }
 
-inline int psbt_input_clear_value(struct wally_psbt_input* input) {
-    int ret = ::wally_psbt_input_clear_value(input);
-    return ret;
-}
-
-template <class INPUT, class ABF>
-inline int psbt_input_set_abf(const INPUT& input, const ABF& abf) {
-    int ret = ::wally_psbt_input_set_abf(detail::get_p(input), abf.data(), abf.size());
-    return ret;
-}
-
-template <class INPUT, class ASSET>
-inline int psbt_input_set_asset(const INPUT& input, const ASSET& asset) {
-    int ret = ::wally_psbt_input_set_asset(detail::get_p(input), asset.data(), asset.size());
-    return ret;
-}
-
 template <class INPUT, class SCRIPT>
 inline int psbt_input_set_claim_script(const INPUT& input, const SCRIPT& script) {
     int ret = ::wally_psbt_input_set_claim_script(detail::get_p(input), script.data(), script.size());
@@ -1615,24 +1598,6 @@ inline int psbt_input_set_pegin_tx(const INPUT& input, const struct wally_tx* pe
 template <class INPUT, class PROOF>
 inline int psbt_input_set_txoutproof(const INPUT& input, const PROOF& proof) {
     int ret = ::wally_psbt_input_set_txoutproof(detail::get_p(input), proof.data(), proof.size());
-    return ret;
-}
-
-template <class INPUT>
-inline int psbt_input_set_value(const INPUT& input, uint64_t value) {
-    int ret = ::wally_psbt_input_set_value(detail::get_p(input), value);
-    return ret;
-}
-
-template <class INPUT, class VBF>
-inline int psbt_input_set_vbf(const INPUT& input, const VBF& vbf) {
-    int ret = ::wally_psbt_input_set_vbf(detail::get_p(input), vbf.data(), vbf.size());
-    return ret;
-}
-
-template <class OUTPUT, class ABF>
-inline int psbt_output_set_abf(const OUTPUT& output, const ABF& abf) {
-    int ret = ::wally_psbt_output_set_abf(detail::get_p(output), abf.data(), abf.size());
     return ret;
 }
 
@@ -1669,12 +1634,6 @@ inline int psbt_output_set_surjectionproof(const OUTPUT& output, const PROOF& pr
 template <class OUTPUT, class COMMITMENT>
 inline int psbt_output_set_value_commitment(const OUTPUT& output, const COMMITMENT& commitment) {
     int ret = ::wally_psbt_output_set_value_commitment(detail::get_p(output), commitment.data(), commitment.size());
-    return ret;
-}
-
-template <class OUTPUT, class VBF>
-inline int psbt_output_set_vbf(const OUTPUT& output, const VBF& vbf) {
-    int ret = ::wally_psbt_output_set_vbf(detail::get_p(output), vbf.data(), vbf.size());
     return ret;
 }
 

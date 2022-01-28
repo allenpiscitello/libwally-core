@@ -242,22 +242,6 @@ class PSBTTests(unittest.TestCase):
                             psbt2, 1234)
 
         if is_elements_build():
-            self._try_set(psbt_set_input_value, psbt, 1234567, 0)
-            self._try_invalid(psbt_has_input_value, psbt)
-            self._try_invalid(psbt_get_input_value, psbt)
-            self._try_invalid(psbt_clear_input_value, psbt)
-            self.assertEqual(psbt_has_input_value(psbt, 0), 1)
-            psbt_clear_input_value(psbt, 0)
-            self.assertEqual(psbt_has_input_value(psbt, 0), 0)
-            self._try_get_set_b(psbt_set_input_vbf,
-                                psbt_get_input_vbf,
-                                psbt_get_input_vbf_len, psbt, dummy_bf)
-            self._try_get_set_b(psbt_set_input_asset,
-                                psbt_get_input_asset,
-                                psbt_get_input_asset_len, psbt, dummy_asset)
-            self._try_get_set_b(psbt_set_input_abf,
-                                psbt_get_input_abf,
-                                psbt_get_input_abf_len, psbt, dummy_bf)
             self._try_set(psbt_set_input_pegin_tx, psbt, dummy_tx)
             self._try_invalid(psbt_get_input_pegin_tx, psbt)
             self._try_get_set_b(psbt_set_input_txoutproof,
@@ -314,15 +298,9 @@ class PSBTTests(unittest.TestCase):
             self._try_get_set_b(psbt_set_output_value_commitment,
                                 psbt_get_output_value_commitment,
                                 psbt_get_output_value_commitment_len, psbt, dummy_commitment)
-            self._try_get_set_b(psbt_set_output_vbf,
-                                psbt_get_output_vbf,
-                                psbt_get_output_vbf_len, psbt, dummy_bf)
             self._try_get_set_b(psbt_set_output_asset_commitment,
                                 psbt_get_output_asset_commitment,
                                 psbt_get_output_asset_commitment_len, psbt, dummy_commitment)
-            self._try_get_set_b(psbt_set_output_abf,
-                                psbt_get_output_abf,
-                                psbt_get_output_abf_len, psbt, dummy_bf)
             self._try_get_set_b(psbt_set_output_nonce,
                                 psbt_get_output_nonce,
                                 psbt_get_output_nonce_len, psbt, dummy_nonce)

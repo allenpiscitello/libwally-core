@@ -59,21 +59,6 @@
       return psbt_get_elements_tx_modifiable_flags(tx_input) & 0x000000000000000fL;
   }
 
-
-  public final static byte[] psbt_get_input_abf(Object psbt, long idx) {
-      final byte[] buf = new byte[psbt_get_input_abf_len(psbt, idx)];
-      if (buf.length == 0) return buf;
-      final int len = psbt_get_input_abf(psbt, idx, buf);
-      return checkBuffer(buf, len);
-  }
-
-  public final static byte[] psbt_get_input_asset(Object psbt, long idx) {
-      final byte[] buf = new byte[psbt_get_input_asset_len(psbt, idx)];
-      if (buf.length == 0) return buf;
-      final int len = psbt_get_input_asset(psbt, idx, buf);
-      return checkBuffer(buf, len);
-  }
-
   public final static byte[] psbt_get_input_claim_script(Object psbt, long idx) {
       final byte[] buf = new byte[psbt_get_input_claim_script_len(psbt, idx)];
       if (buf.length == 0) return buf;

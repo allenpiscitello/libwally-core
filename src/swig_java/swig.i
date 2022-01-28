@@ -513,10 +513,6 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %rename("_get_elements_tx_modifiable_flags") wally_psbt_get_elements_tx_modifiable_flags;
 %returns_struct(wally_psbt_get_global_tx_alloc, wally_tx);
 %rename("psbt_get_global_tx") wally_psbt_get_global_tx_alloc;
-%returns_size_t(wally_psbt_get_input_abf);
-%returns_size_t(wally_psbt_get_input_abf_len);
-%returns_size_t(wally_psbt_get_input_asset);
-%returns_size_t(wally_psbt_get_input_asset_len);
 %returns_size_t(wally_psbt_get_input_redeem_script);
 %returns_size_t(wally_psbt_get_input_redeem_script_len);
 %returns_size_t(wally_psbt_get_input_claim_script);
@@ -548,9 +544,6 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_input_unknowns_size);
 %returns_struct(wally_psbt_get_input_utxo_alloc, wally_tx);
 %rename("psbt_get_input_utxo") wally_psbt_get_input_utxo_alloc;
-%returns_uint64(wally_psbt_get_input_value);
-%returns_size_t(wally_psbt_get_input_vbf);
-%returns_size_t(wally_psbt_get_input_vbf_len);
 %returns_size_t(wally_psbt_get_input_witness_script);
 %returns_size_t(wally_psbt_get_input_witness_script_len);
 %returns_struct(wally_psbt_get_input_witness_utxo_alloc, wally_tx_output);
@@ -559,8 +552,6 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_length);
 %returns_size_t(wally_psbt_get_num_inputs);
 %returns_size_t(wally_psbt_get_num_outputs);
-%returns_size_t(wally_psbt_get_output_abf);
-%returns_size_t(wally_psbt_get_output_abf_len);
 %returns_size_t(wally_psbt_get_output_amount);
 %returns_size_t(wally_psbt_get_output_asset_commitment);
 %returns_size_t(wally_psbt_get_output_asset_commitment_len);
@@ -584,8 +575,6 @@ static jbyteArray create_array(JNIEnv *jenv, const unsigned char* p, size_t len)
 %returns_size_t(wally_psbt_get_output_unknowns_size);
 %returns_size_t(wally_psbt_get_output_value_commitment);
 %returns_size_t(wally_psbt_get_output_value_commitment_len);
-%returns_size_t(wally_psbt_get_output_vbf);
-%returns_size_t(wally_psbt_get_output_vbf_len);
 %returns_size_t(wally_psbt_get_output_witness_script);
 %returns_size_t(wally_psbt_get_output_witness_script_len);
 %returns_size_t(wally_psbt_get_scalar);

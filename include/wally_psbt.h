@@ -63,14 +63,6 @@ struct wally_psbt_input {
     uint32_t required_locktime;
     uint32_t has_required_locktime;
 #ifdef BUILD_ELEMENTS
-    uint64_t value;
-    uint32_t has_value;
-    unsigned char *vbf;
-    size_t vbf_len;
-    unsigned char *asset;
-    size_t asset_len;
-    unsigned char *abf;
-    size_t abf_len;
     struct wally_tx *pegin_tx;
     unsigned char *txoutproof;
     size_t txoutproof_len;
@@ -99,12 +91,8 @@ struct wally_psbt_output {
     size_t blinding_pubkey_len;
     unsigned char *value_commitment;
     size_t value_commitment_len;
-    unsigned char *vbf;
-    size_t vbf_len;
     unsigned char *asset_commitment;
     size_t asset_commitment_len;
-    unsigned char *abf;
-    size_t abf_len;
     unsigned char *nonce;
     size_t nonce_len;
     unsigned char *rangeproof;
@@ -915,60 +903,6 @@ WALLY_CORE_API int wally_psbt_elements_init_alloc(
 
 #ifndef SWIG
 /**
- * Set the value in an elements input.
- *
- * :param input: The input to update.
- * :param value: The value for this input.
- */
-WALLY_CORE_API int wally_psbt_input_set_value(
-    struct wally_psbt_input *input,
-    uint64_t value);
-
-/**
- * Clear the value in an elements input.
- *
- * :param input: The input to update.
- */
-WALLY_CORE_API int wally_psbt_input_clear_value(
-    struct wally_psbt_input *input);
-
-/**
- * Set the value blinding factor in an elements input.
- *
- * :param input: The input to update.
- * :param vbf: The value blinding factor.
- * :param vbf_len: Length of ``vbf``. Must be ``BLINDING_FACTOR_LEN``.
- */
-WALLY_CORE_API int wally_psbt_input_set_vbf(
-    struct wally_psbt_input *input,
-    const unsigned char *vbf,
-    size_t vbf_len);
-
-/**
- * Set the asset in an elements input.
- *
- * :param input: The input to update.
- * :param asset: The asset for this input.
- * :param asset_len: Length of ``asset`` in bytes.
- */
-WALLY_CORE_API int wally_psbt_input_set_asset(
-    struct wally_psbt_input *input,
-    const unsigned char *asset,
-    size_t asset_len);
-
-/**
- * Set the asset blinding factor in an elements input
- *
- * :param input: The input to update.
- * :param abf: The asset blinding factor.
- * :param abf_len: Length of ``abf`` in bytes. Must be ``BLINDING_FACTOR_LEN``.
- */
-WALLY_CORE_API int wally_psbt_input_set_abf(
-    struct wally_psbt_input *input,
-    const unsigned char *abf,
-    size_t abf_len);
-
-/**
  * Set the peg in tx in an input.
  *
  * :param input: The input to update.
@@ -1039,18 +973,6 @@ WALLY_CORE_API int wally_psbt_output_set_value_commitment(
     size_t commitment_len);
 
 /**
- * Set the value blinding factor in an elements output.
- *
- * :param output: The output to update.
- * :param vbf: The value blinding factor.
- * :param vbf_len: Length of ``vbf``. Must be ``BLINDING_FACTOR_LEN``.
- */
-WALLY_CORE_API int wally_psbt_output_set_vbf(
-    struct wally_psbt_output *output,
-    const unsigned char *vbf,
-    size_t vbf_len);
-
-/**
  * Set the asset commitment in an elements output.
  *
  * :param output: The output to update.
@@ -1061,18 +983,6 @@ WALLY_CORE_API int wally_psbt_output_set_asset_commitment(
     struct wally_psbt_output *output,
     const unsigned char *commitment,
     size_t commitment_len);
-
-/**
- * Set the asset blinding factor in an elements output.
- *
- * :param output: The output to update.
- * :param abf: The asset blinding factor.
- * :param abf_len: Length of ``abf`` in bytes. Must be ``BLINDING_FACTOR_LEN``.
- */
-WALLY_CORE_API int wally_psbt_output_set_abf(
-    struct wally_psbt_output *output,
-    const unsigned char *abf,
-    size_t abf_len);
 
 /**
  * Set the nonce commitment in an elements output.
