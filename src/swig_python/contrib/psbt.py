@@ -242,6 +242,52 @@ class PSBTTests(unittest.TestCase):
                             psbt2, 1234)
 
         if is_elements_build():
+            self._try_get_set_i(psbt_set_input_issuance_amount,
+                                psbt_clear_input_issuance_amount,
+                                psbt_get_input_issuance_amount,
+                                psbt2, 100)
+            
+            self._try_get_set_b(psbt_set_input_issuance_amount_commitment,
+                                psbt_get_input_issuance_amount_commitment,
+                                psbt_get_input_issuance_amount_commitment_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_issuance_amount_rangeproof,
+                                psbt_get_input_issuance_amount_rangeproof,
+                                psbt_get_input_issuance_amount_rangeproof_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_issuance_amount_blind_proof,
+                                psbt_get_input_issuance_amount_blind_proof,
+                                psbt_get_input_issuance_amount_blind_proof_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_blinding_nonce,
+                                psbt_get_input_blinding_nonce,
+                                psbt_get_input_blinding_nonce_len, psbt2, dummy_nonce)
+            
+            self._try_get_set_b(psbt_set_input_entropy,
+                                psbt_get_input_entropy,
+                                psbt_get_input_entropy_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_i(psbt_set_input_inflation_keys,
+                                psbt_clear_input_inflation_keys,
+                                psbt_get_input_inflation_keys,
+                                psbt2, 100)
+            
+            self._try_get_set_b(psbt_set_input_inflation_keys_commitment,
+                                psbt_get_input_inflation_keys_commitment,
+                                psbt_get_input_inflation_keys_commitment_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_inflation_keys_rangeproof,
+                                psbt_get_input_inflation_keys_rangeproof,
+                                psbt_get_input_inflation_keys_rangeproof_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_inflation_keys_blind_proof,
+                                psbt_get_input_inflation_keys_blind_proof,
+                                psbt_get_input_inflation_keys_blind_proof_len, psbt2, dummy_bytes)
+            
+            self._try_get_set_b(psbt_set_input_txoutproof,
+                                psbt_get_input_txoutproof,
+                                psbt_get_input_txoutproof_len, psbt, dummy_bytes)
+            
             self._try_set(psbt_set_input_pegin_tx, psbt, dummy_tx)
             self._try_invalid(psbt_get_input_pegin_tx, psbt)
             self._try_get_set_b(psbt_set_input_txoutproof,

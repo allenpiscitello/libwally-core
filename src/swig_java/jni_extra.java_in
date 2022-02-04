@@ -328,6 +328,62 @@
   public final static byte[] symmetric_key_from_parent(byte[] jarg1, long jarg2, byte[] jarg3) {
       return symmetric_key_from_parent(jarg1, jarg2, jarg3, null);
   }
+  
+  public final static byte[] psbt_get_input_blinding_nonce(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_blinding_nonce_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_blinding_nonce(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+  
+  public final static byte[] psbt_get_input_entropy(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_entropy_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_entropy(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+  
+  public final static byte[] psbt_get_input_issuance_amount_blind_proof(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_issuance_amount_blind_proof_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_issuance_amount_blind_proof(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+
+    public final static byte[] psbt_get_input_issuance_amount_commitment(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_issuance_amount_commitment_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_issuance_amount_commitment(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+
+  public final static byte[] psbt_get_input_issuance_amount_rangeproof(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_issuance_amount_rangeproof_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_issuance_amount_rangeproof(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+
+  public final static byte[] psbt_get_input_inflation_keys_blind_proof(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_inflation_keys_blind_proof_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_inflation_keys_blind_proof(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+
+  public final static byte[] psbt_get_input_inflation_keys_commitment(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_inflation_keys_commitment_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_inflation_keys_commitment(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
+
+  public final static byte[] psbt_get_input_inflation_keys_rangeproof(Object psbt, long idx) {
+      final byte[] buf = new byte[psbt_get_input_inflation_keys_rangeproof_len(psbt, idx)];
+      if (buf.length == 0) return buf;
+      final int len = psbt_get_input_inflation_keys_rangeproof(psbt, idx, buf);
+      return checkBuffer(buf, len);
+  }
 
   public final static byte[] psbt_get_input_final_scriptsig(Object psbt, long idx) {
       final byte[] buf = new byte[psbt_get_input_final_scriptsig_len(psbt, idx)];

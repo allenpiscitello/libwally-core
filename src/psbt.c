@@ -526,6 +526,50 @@ int wally_psbt_input_clear_required_locktime(struct wally_psbt_input *input)
 }
 
 #ifdef BUILD_ELEMENTS
+int wally_psbt_input_set_issuance_amount(struct wally_psbt_input *input, uint64_t issuance_amount)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->issuance_amount = issuance_amount;
+    input->has_issuance_amount = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_clear_issuance_amount(struct wally_psbt_input *input)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->issuance_amount = 0;
+    input->has_issuance_amount = 0u;
+    return WALLY_OK;
+}
+
+SET_BYTES(wally_psbt_input, issuance_amount_commitment)
+SET_BYTES(wally_psbt_input, issuance_amount_rangeproof)
+SET_BYTES(wally_psbt_input, issuance_amount_blind_proof)
+SET_BYTES(wally_psbt_input, blinding_nonce)
+SET_BYTES(wally_psbt_input, entropy)
+int wally_psbt_input_set_inflation_keys(struct wally_psbt_input *input, uint64_t inflation_keys)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->inflation_keys = inflation_keys;
+    input->has_inflation_keys = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_clear_inflation_keys(struct wally_psbt_input *input)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->inflation_keys = 0;
+    input->has_inflation_keys = 0u;
+    return WALLY_OK;
+}
+
+SET_BYTES(wally_psbt_input, inflation_keys_commitment)
+SET_BYTES(wally_psbt_input, inflation_keys_rangeproof)
+SET_BYTES(wally_psbt_input, inflation_keys_blind_proof)
 SET_STRUCT(wally_psbt_input, pegin_tx, wally_tx,
            tx_clone_alloc, wally_tx_free)
 SET_BYTES(wally_psbt_input, txoutproof)
@@ -548,6 +592,14 @@ static int psbt_input_free(struct wally_psbt_input *input, bool free_parent)
         clear_and_free(input->previous_txid, input->previous_txid_len);
 
 #ifdef BUILD_ELEMENTS
+        clear_and_free(input->issuance_amount_commitment, input->issuance_amount_commitment_len);
+        clear_and_free(input->issuance_amount_rangeproof, input->issuance_amount_rangeproof_len);
+        clear_and_free(input->issuance_amount_blind_proof, input->issuance_amount_blind_proof_len);
+        clear_and_free(input->blinding_nonce, input->blinding_nonce_len);
+        clear_and_free(input->entropy, input->entropy_len);
+        clear_and_free(input->inflation_keys_commitment, input->inflation_keys_commitment_len);
+        clear_and_free(input->inflation_keys_rangeproof, input->inflation_keys_rangeproof_len);
+        clear_and_free(input->inflation_keys_blind_proof, input->inflation_keys_blind_proof_len);
         wally_tx_free(input->pegin_tx);
         clear_and_free(input->txoutproof, input->txoutproof_len);
         clear_and_free(input->genesis_blockhash, input->genesis_blockhash_len);
@@ -897,10 +949,8 @@ int wally_psbt_add_input_at(struct wally_psbt *psbt,
             ret = array_grow((void *)&psbt->inputs, psbt->num_inputs,
                              &psbt->inputs_allocation_len,
                              sizeof(struct wally_psbt_input));
-            if (ret != WALLY_OK) {
-                wally_tx_remove_input(psbt->tx, index);
-                return ret;
-            }
+            if (ret != WALLY_OK)
+                goto cleanup;
         }
 
         memmove(psbt->inputs + index + 1, psbt->inputs + index,
@@ -908,19 +958,54 @@ int wally_psbt_add_input_at(struct wally_psbt *psbt,
         wally_clear(psbt->inputs + index, sizeof(struct wally_psbt_input));
 
         if (psbt->version >= 2) {
-            if((ret = replace_bytes(input->txhash, WALLY_TXHASH_LEN, &psbt->inputs[index].previous_txid, &psbt->inputs[index].previous_txid_len)) != WALLY_OK) {
-                wally_psbt_remove_input(psbt, index);
-                return ret;
-            }
+            if((ret = replace_bytes(input->txhash, WALLY_TXHASH_LEN, &psbt->inputs[index].previous_txid, &psbt->inputs[index].previous_txid_len)) != WALLY_OK)
+                goto cleanup;
 
             psbt->inputs[index].previous_txid_len = WALLY_TXHASH_LEN;
             psbt->inputs[index].output_index = input->index;
             psbt->inputs[index].psbt_version = psbt->version;
             psbt->inputs[index].sequence = input->sequence;
             psbt->inputs[index].has_sequence = 1u;
+#ifdef BUILD_ELEMENTS
+            if (input->issuance_amount) {
+                if (input->issuance_amount_len == WALLY_TX_ASSET_CT_VALUE_UNBLIND_LEN && input->issuance_amount[0] == 0x01) {
+                    if ((ret = wally_tx_confidential_value_to_satoshi(input->issuance_amount, input->issuance_amount_len, &psbt->inputs[index].issuance_amount)) != WALLY_OK)
+                        goto cleanup;
+                    psbt->inputs[index].has_issuance_amount = 1u;
+                }
+                else if(input->issuance_amount_len == WALLY_TX_ASSET_CT_VALUE_LEN && (input->issuance_amount[0] == 0x8 || input->issuance_amount[0] == 0x09)) {
+                    if ((ret = replace_bytes(input->issuance_amount + 1, WALLY_TX_ASSET_CT_VALUE_LEN - 1,
+                                             &psbt->inputs[index].issuance_amount_commitment, &psbt->inputs[index].issuance_amount_commitment_len)) != WALLY_OK)
+                        goto cleanup;
+                }
+            }
+            if ((ret = replace_bytes(input->issuance_amount_rangeproof, input->issuance_amount_rangeproof_len, &psbt->inputs[index].issuance_amount_rangeproof, &psbt->inputs[index].issuance_amount_rangeproof_len)) != WALLY_OK)
+                goto cleanup;
+            if ((ret = replace_bytes(input->inflation_keys_rangeproof, input->inflation_keys_rangeproof_len, &psbt->inputs[index].inflation_keys_rangeproof, &psbt->inputs[index].inflation_keys_rangeproof_len)) != WALLY_OK)
+                goto cleanup;
+            if (input->inflation_keys) {
+                if (input->inflation_keys_len == WALLY_TX_ASSET_CT_VALUE_UNBLIND_LEN && input->inflation_keys[0] == 0x01) {
+                    wally_tx_confidential_value_to_satoshi(input->inflation_keys, input->inflation_keys_len, &psbt->inputs[index].inflation_keys);
+                    psbt->inputs[index].has_inflation_keys = 1u;
+                }
+                else if(input->inflation_keys_len == WALLY_TX_ASSET_CT_VALUE_LEN && (input->inflation_keys[0] == 0x8 || input->inflation_keys[0] == 0x09)) {
+                    if ((ret = replace_bytes(input->inflation_keys + 1, WALLY_TX_ASSET_CT_VALUE_LEN - 1, &psbt->inputs[index].inflation_keys_commitment, &psbt->inputs[index].inflation_keys_commitment_len)) != WALLY_OK)
+                        goto cleanup;
+                }
+            }
+            if (input->features & WALLY_TX_IS_ISSUANCE) {
+                if ((ret = replace_bytes(input->blinding_nonce, SHA256_LEN, &psbt->inputs[index].blinding_nonce, &psbt->inputs[index].blinding_nonce_len)) != WALLY_OK)
+                    goto cleanup;
+                if ((ret = replace_bytes(input->entropy, SHA256_LEN, &psbt->inputs[index].entropy, &psbt->inputs[index].entropy_len)) != WALLY_OK)
+                    goto cleanup;
+            }
+#endif /* BUILD_ELEMENTS */
         }
         psbt->num_inputs += 1;
     }
+cleanup:
+    if (ret != WALLY_OK)
+        wally_psbt_remove_input(psbt, index);
     return ret;
 }
 
@@ -1391,7 +1476,67 @@ static int pull_psbt_input(const unsigned char **cursor, size_t *max,
             pull_skip(&key, &key_len, sizeof(PSET_KEY_PREFIX));
 
             switch (pull_varint(&key, &key_len)) {
-          
+
+            case PSBT_ELEMENTS_IN_ISSUANCE_VALUE: {
+                if (result->has_issuance_amount)
+                    return WALLY_EINVAL;
+                subfield_nomore_end(cursor, max, key, key_len);
+                pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+                if (val_max != sizeof(result->issuance_amount))
+                    return WALLY_EINVAL;
+
+                result->issuance_amount = pull_le64(&val, &val_max);
+                result->has_issuance_amount = 1u;
+                pull_subfield_end(cursor, max, val, val_max);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_VALUE_COMMITMENT: {
+                PSBT_PULL_B(input, issuance_amount_commitment);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_VALUE_RANGEPROOF: {
+                PSBT_PULL_B(input, issuance_amount_rangeproof);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_KEYS_RANGEPROOF: {
+                PSBT_PULL_B(input, inflation_keys_rangeproof);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS: {
+                if (result->has_inflation_keys)
+                    return WALLY_EINVAL;
+                subfield_nomore_end(cursor, max, key, key_len);
+                pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+                if (val_max != sizeof(result->inflation_keys))
+                    return WALLY_EINVAL;
+
+                result->inflation_keys = pull_le64(&val, &val_max);
+                result->has_inflation_keys = 1u;
+                pull_subfield_end(cursor, max, val, val_max);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS_COMMITMENT: {
+                PSBT_PULL_B(input, inflation_keys_commitment);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_BLINDING_NONCE: {
+                PSBT_PULL_B(input, blinding_nonce);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_ASSET_ENTROPY: {
+                PSBT_PULL_B(input, entropy);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_BLIND_VALUE_PROOF: {
+                PSBT_PULL_B(input, issuance_amount_blind_proof);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_ISSUANCE_BLIND_INFLATION_KEYS_PROOF: {
+                PSBT_PULL_B(input, inflation_keys_blind_proof);
+                break;
+            }
             case PSBT_ELEMENTS_IN_PEG_IN_TX: {
                 if (result->pegin_tx)
                     return WALLY_EINVAL; /* Duplicate value */
@@ -1439,7 +1584,16 @@ unknown_type:
 
     if (result->psbt_version >= 2 && (!result->previous_txid || !found_output_index))
         return WALLY_EINVAL;
-
+#ifdef BUILD_ELEMENTS
+    if (result->has_issuance_amount && result->issuance_amount_commitment && !result->issuance_amount_blind_proof)
+        return WALLY_EINVAL;
+    if (result->issuance_amount_blind_proof && !result->issuance_amount_commitment)
+        return WALLY_EINVAL;
+    if (result->has_inflation_keys && result->inflation_keys_commitment && !result->inflation_keys_blind_proof)
+        return WALLY_EINVAL;
+    if (result->inflation_keys_blind_proof && !result->inflation_keys_commitment)
+        return WALLY_EINVAL;
+#endif /* BUILD_ELEMENTS */
     return WALLY_OK;
 }
 
@@ -2064,6 +2218,33 @@ static int push_psbt_input(unsigned char **cursor, size_t *max, uint32_t flags,
         }
     }
 #ifdef BUILD_ELEMENTS
+    /* Issuance */
+    if (input->has_issuance_amount) {
+        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_VALUE, NULL, 0);
+        push_varint(cursor, max, sizeof(input->issuance_amount));
+        push_le64(cursor, max, input->issuance_amount);
+    }
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_VALUE_COMMITMENT,
+                          input->issuance_amount_commitment, input->issuance_amount_commitment_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_VALUE_RANGEPROOF,
+                          input->issuance_amount_rangeproof, input->issuance_amount_rangeproof_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_KEYS_RANGEPROOF,
+                          input->inflation_keys_rangeproof, input->inflation_keys_rangeproof_len);
+    if (input->has_inflation_keys) {
+        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS, NULL, 0);
+        push_varint(cursor, max, sizeof(input->inflation_keys));
+        push_le64(cursor, max, input->inflation_keys);
+    }
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS_COMMITMENT,
+                          input->inflation_keys_commitment, input->inflation_keys_commitment_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLINDING_NONCE,
+                          input->blinding_nonce, input->blinding_nonce_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_ASSET_ENTROPY,
+                          input->entropy, input->entropy_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_VALUE_PROOF,
+                          input->issuance_amount_blind_proof, input->issuance_amount_blind_proof_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_INFLATION_KEYS_PROOF,
+                          input->inflation_keys_blind_proof, input->inflation_keys_blind_proof_len);
     /* Peg ins */
     if (input->pegin_tx) {
         push_elements_key(cursor, max, PSBT_ELEMENTS_IN_PEG_IN_TX, NULL, 0);
@@ -2376,6 +2557,24 @@ static int combine_inputs(struct wally_psbt_input *dst,
     }
 
 #ifdef BUILD_ELEMENTS
+    if (!dst->has_issuance_amount && src->has_issuance_amount) {
+        dst->has_issuance_amount = src->has_issuance_amount;
+        dst->issuance_amount = src->issuance_amount;
+    }
+    COMBINE_BYTES(input, issuance_amount_commitment);
+    COMBINE_BYTES(input, issuance_amount_rangeproof);
+    COMBINE_BYTES(input, issuance_amount_blind_proof);
+
+    COMBINE_BYTES(input, blinding_nonce);
+    COMBINE_BYTES(input, entropy);
+
+    if (!dst->has_inflation_keys && src->has_inflation_keys) {
+        dst->has_inflation_keys = src->has_inflation_keys;
+        dst->inflation_keys = src->inflation_keys;
+    }
+    COMBINE_BYTES(input, inflation_keys_commitment);
+    COMBINE_BYTES(input, inflation_keys_rangeproof);
+    COMBINE_BYTES(input, inflation_keys_blind_proof);
     if ((ret = combine_txs(&dst->pegin_tx, src->pegin_tx)) != WALLY_OK)
         return ret;
     COMBINE_BYTES(input, txoutproof);
@@ -2510,24 +2709,36 @@ int psbt_build_tx(const struct wally_psbt *psbt, struct wally_tx **tx)
 
     for (size_t i = 0; i < psbt->num_inputs; i++) {
         struct wally_psbt_input *psbt_input = &psbt->inputs[i];
+        uint32_t sequence;
+        sequence = psbt_input->has_sequence ? psbt_input->sequence : WALLY_TX_SEQUENCE_FINAL;
+        struct wally_tx_input *input;
+
         if (is_elements) {
+#ifdef BUILD_ELEMENTS
+            //TODO, figure out issuance, if its commitment or raw value
+            if ((ret = wally_tx_elements_input_init_alloc(psbt_input->previous_txid, psbt_input->previous_txid_len,
+                                                          psbt_input->output_index, sequence, NULL, 0, NULL, psbt_input->blinding_nonce, psbt_input->blinding_nonce_len,
+                                                          psbt_input->entropy, psbt_input->entropy_len, NULL, 0, NULL, 0, psbt_input->issuance_amount_rangeproof,
+                                                          psbt_input->issuance_amount_rangeproof_len, psbt_input->inflation_keys_rangeproof, psbt_input->inflation_keys_rangeproof_len,
+                                                          NULL, &input)) != WALLY_OK) {
+                wally_tx_free(*tx);
+                return ret;
+            }
+#endif /* BUILD_ELEMENTS */
+#ifndef BUILD_ELEMENTS
             return WALLY_EINVAL;
+#endif /* BUILD_ELEMENTS */
         }
         else {
-            struct wally_tx_input *input;
-            uint32_t sequence;
-            sequence = psbt_input->has_sequence ? psbt_input->sequence : WALLY_TX_SEQUENCE_FINAL;
-
             if ((ret = wally_tx_input_init_alloc(psbt_input->previous_txid, psbt_input->previous_txid_len, psbt_input->output_index, sequence, NULL, 0, NULL, &input)) != WALLY_OK) {
                 wally_tx_free(*tx);
                 return ret;
             }
-
-            if ((ret = wally_tx_add_input(*tx, input)) != WALLY_OK) {
-                wally_tx_free(*tx);
-                wally_tx_input_free(input);
-                return ret;
-            }
+        }
+        if ((ret = wally_tx_add_input(*tx, input)) != WALLY_OK) {
+            wally_tx_free(*tx);
+            wally_tx_input_free(input);
+            return ret;
         }
     }
 
@@ -3382,11 +3593,37 @@ int wally_psbt_clear_input_required_locktime(struct wally_psbt *psbt, size_t ind
 }
 
 #ifdef BUILD_ELEMENTS
+PSBT_GET_I(input, issuance_amount, size_t)
+PSBT_GET_B(input, issuance_amount_commitment)
+PSBT_GET_B(input, issuance_amount_rangeproof)
+PSBT_GET_B(input, issuance_amount_blind_proof)
+PSBT_GET_B(input, blinding_nonce)
+PSBT_GET_B(input, entropy)
+PSBT_GET_I(input, inflation_keys, size_t)
+PSBT_GET_B(input, inflation_keys_commitment)
+PSBT_GET_B(input, inflation_keys_rangeproof)
+PSBT_GET_B(input, inflation_keys_blind_proof)
 PSBT_GET_S(input, pegin_tx, wally_tx, tx_clone_alloc)
 PSBT_GET_B(input, txoutproof)
 PSBT_GET_B(input, genesis_blockhash)
 PSBT_GET_B(input, claim_script)
 
+PSBT_SET_I(input, issuance_amount, uint64_t)
+int wally_psbt_clear_input_issuance_amount(struct wally_psbt *psbt, size_t index) {
+    return wally_psbt_input_clear_issuance_amount(psbt_get_input(psbt, index));
+}
+PSBT_SET_B(input, issuance_amount_commitment)
+PSBT_SET_B(input, issuance_amount_rangeproof)
+PSBT_SET_B(input, issuance_amount_blind_proof)
+PSBT_SET_B(input, blinding_nonce)
+PSBT_SET_B(input, entropy)
+PSBT_SET_I(input, inflation_keys, uint64_t)
+int wally_psbt_clear_input_inflation_keys(struct wally_psbt *psbt, size_t index) {
+    return wally_psbt_input_clear_inflation_keys(psbt_get_input(psbt, index));
+}
+PSBT_SET_B(input, inflation_keys_commitment)
+PSBT_SET_B(input, inflation_keys_rangeproof)
+PSBT_SET_B(input, inflation_keys_blind_proof)
 PSBT_SET_S(input, pegin_tx, wally_tx)
 PSBT_SET_B(input, txoutproof)
 PSBT_SET_B(input, genesis_blockhash)

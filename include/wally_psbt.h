@@ -63,6 +63,26 @@ struct wally_psbt_input {
     uint32_t required_locktime;
     uint32_t has_required_locktime;
 #ifdef BUILD_ELEMENTS
+    uint64_t issuance_amount;
+    uint32_t has_issuance_amount;
+    unsigned char *issuance_amount_commitment;
+    size_t issuance_amount_commitment_len;
+    unsigned char *issuance_amount_rangeproof;
+    size_t issuance_amount_rangeproof_len;
+    unsigned char *issuance_amount_blind_proof;
+    size_t issuance_amount_blind_proof_len;
+    unsigned char *blinding_nonce;
+    size_t blinding_nonce_len;
+    unsigned char *entropy;
+    size_t entropy_len;
+    uint64_t inflation_keys;
+    uint32_t has_inflation_keys;
+    unsigned char *inflation_keys_commitment;
+    size_t inflation_keys_commitment_len;
+    unsigned char *inflation_keys_rangeproof;
+    size_t inflation_keys_rangeproof_len;
+    unsigned char *inflation_keys_blind_proof;
+    size_t inflation_keys_blind_proof_len;
     struct wally_tx *pegin_tx;
     unsigned char *txoutproof;
     size_t txoutproof_len;
@@ -902,6 +922,138 @@ WALLY_CORE_API int wally_psbt_elements_init_alloc(
     struct wally_psbt **output);
 
 #ifndef SWIG
+/**
+ * Set the issuance amount for an input.
+ *
+ * :param input: The input to update.
+ * :param issuance_amount: The issuance amount for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_issuance_amount(
+    struct wally_psbt_input *input,
+    uint64_t issuance_amount);
+
+/**
+ * Clears the issuance amount for an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_issuance_amount(
+    struct wally_psbt_input *input);
+
+/**
+ * Set the issuance amount commitment for an input.
+ *
+ * :param input: The input to update.
+ * :param issuance_amount_commitment: The issuance amount commitment for this input.
+ * :param issuance_amount_commitment_len: Length of ``issuance_amount_commitment`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_issuance_amount_commitment(
+    struct wally_psbt_input *input,
+    const unsigned char *issuance_amount_commitment,
+    size_t issuance_amount_commitment_len);
+
+/**
+ * Set the issuance amount rangeproof for an input.
+ *
+ * :param input: The input to update.
+ * :param issuance_amount_rangeproof: The issuance amount rangeproof for this input.
+ * :param issuance_amount_rangeproof_len: Length of ``issuance_amount_rangeproof`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_issuance_amount_rangeproof(
+    struct wally_psbt_input *input,
+    const unsigned char *issuance_amount_rangeproof,
+    size_t issuance_amount_rangeproof_len);
+
+/**
+ * Set the issuance amount blind proof for an input.
+ *
+ * :param input: The input to update.
+ * :param issuance_amount_blind_proof: The issuance amount blind proof for this input.
+ * :param issuance_amount_blind_proof_len: Length of ``issuance_amount_blind_proof`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_issuance_amount_blind_proof(
+    struct wally_psbt_input *input,
+    const unsigned char *issuance_amount_blind_proof,
+    size_t issuance_amount_blind_proof_len);
+
+/**
+ * Set the blinding nonce for an input.
+ *
+ * :param input: The input to update.
+ * :param blinding_nonce: The blinding nonce for this input.
+ * :param blinding_nonce_len: Length of ``blinding_nonce`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_blinding_nonce(
+    struct wally_psbt_input *input,
+    const unsigned char *blinding_nonce,
+    size_t blinding_nonce_len);
+
+/**
+ * Set the entropy for an input.
+ *
+ * :param input: The input to update.
+ * :param entropy: The entropy for this input.
+ * :param entropy_len: Length of ``entropy`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_issuance_asset_entropy_len(
+    struct wally_psbt_input *input,
+    const unsigned char *entropy,
+    size_t entropy_len);
+
+/*
+ * Set the inflation keys for an input.
+ *
+ * :param input: The input to update.
+ * :param inflation_keys: The inflation keys for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_inflation_keys(
+    struct wally_psbt_input *input,
+    uint64_t inflation_keys);
+
+/**
+ * Clears the inflation keys for an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_inflation_keys(
+    struct wally_psbt_input *input);
+
+/**
+ * Set the inflation keys commitment for an input.
+ *
+ * :param input: The input to update.
+ * :param inflation_keys_commitment: The inflation keys commitment for this input.
+ * :param inflation_keys_commitment_len: Length of ``inflation_keys_commitment`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_inflation_keys_commitment(
+    struct wally_psbt_input *input,
+    const unsigned char *inflation_keys_commitment,
+    size_t inflation_keys_commitment_len);
+
+/**
+ * Set the inflation keys rangeproof for an input.
+ *
+ * :param input: The input to update.
+ * :param inflation_keys_rangeproof: The inflation keys rangeproof for this input.
+ * :param inflation_keys_rangeproof_len: Length of ``inflation_keys_rangeproof_`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_inflation_keys_rangeproof(
+    struct wally_psbt_input *input,
+    const unsigned char *inflation_keys_rangeproof,
+    size_t inflation_keys_rangeproof_len);
+
+/**
+ * Set the inflation keys blind proof for an input.
+ *
+ * :param input: The input to update.
+ * :param inflation_keys_blind_proof: The inflation keys blind proof for this input.
+ * :param inflation_keys_blind_proof_len: Length of ``inflation_keys_blind_proof`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_inflation_keys_blind_proof(
+    struct wally_psbt_input *input,
+    const unsigned char *inflation_keys_blind_proof,
+    size_t inflation_keys_blind_proof_len);
+
 /**
  * Set the peg in tx in an input.
  *

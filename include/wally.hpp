@@ -1577,6 +1577,22 @@ inline int psbt_elements_init_alloc(uint32_t version, size_t inputs_allocation_l
     return ret;
 }
 
+inline int psbt_input_clear_inflation_keys(struct wally_psbt_input* input) {
+    int ret = ::wally_psbt_input_clear_inflation_keys(input);
+    return ret;
+}
+
+inline int psbt_input_clear_issuance_amount(struct wally_psbt_input* input) {
+    int ret = ::wally_psbt_input_clear_issuance_amount(input);
+    return ret;
+}
+
+template <class INPUT, class BLINDING_NONCE>
+inline int psbt_input_set_blinding_nonce(const INPUT& input, const BLINDING_NONCE& blinding_nonce) {
+    int ret = ::wally_psbt_input_set_blinding_nonce(detail::get_p(input), blinding_nonce.data(), blinding_nonce.size());
+    return ret;
+}
+
 template <class INPUT, class SCRIPT>
 inline int psbt_input_set_claim_script(const INPUT& input, const SCRIPT& script) {
     int ret = ::wally_psbt_input_set_claim_script(detail::get_p(input), script.data(), script.size());
@@ -1586,6 +1602,54 @@ inline int psbt_input_set_claim_script(const INPUT& input, const SCRIPT& script)
 template <class INPUT, class GENESIS_BLOCKHASH>
 inline int psbt_input_set_genesis_blockhash(const INPUT& input, const GENESIS_BLOCKHASH& genesis_blockhash) {
     int ret = ::wally_psbt_input_set_genesis_blockhash(detail::get_p(input), genesis_blockhash.data(), genesis_blockhash.size());
+    return ret;
+}
+
+template <class INPUT, class INFLATION_KEYS_BLIND_PROOF>
+inline int psbt_input_set_inflation_keys_blind_proof(const INPUT& input, const INFLATION_KEYS_BLIND_PROOF& inflation_keys_blind_proof) {
+    int ret = ::wally_psbt_input_set_inflation_keys_blind_proof(detail::get_p(input), inflation_keys_blind_proof.data(), inflation_keys_blind_proof.size());
+    return ret;
+}
+
+template <class INPUT, class INFLATION_KEYS_COMMITMENT>
+inline int psbt_input_set_inflation_keys_commitment(const INPUT& input, const INFLATION_KEYS_COMMITMENT& inflation_keys_commitment) {
+    int ret = ::wally_psbt_input_set_inflation_keys_commitment(detail::get_p(input), inflation_keys_commitment.data(), inflation_keys_commitment.size());
+    return ret;
+}
+
+template <class INPUT, class INFLATION_KEYS_RANGEPROOF>
+inline int psbt_input_set_inflation_keys_rangeproof(const INPUT& input, const INFLATION_KEYS_RANGEPROOF& inflation_keys_rangeproof) {
+    int ret = ::wally_psbt_input_set_inflation_keys_rangeproof(detail::get_p(input), inflation_keys_rangeproof.data(), inflation_keys_rangeproof.size());
+    return ret;
+}
+
+template <class INPUT>
+inline int psbt_input_set_issuance_amount(const INPUT& input, uint64_t issuance_amount) {
+    int ret = ::wally_psbt_input_set_issuance_amount(detail::get_p(input), issuance_amount);
+    return ret;
+}
+
+template <class INPUT, class ISSUANCE_AMOUNT_BLIND_PROOF>
+inline int psbt_input_set_issuance_amount_blind_proof(const INPUT& input, const ISSUANCE_AMOUNT_BLIND_PROOF& issuance_amount_blind_proof) {
+    int ret = ::wally_psbt_input_set_issuance_amount_blind_proof(detail::get_p(input), issuance_amount_blind_proof.data(), issuance_amount_blind_proof.size());
+    return ret;
+}
+
+template <class INPUT, class ISSUANCE_AMOUNT_COMMITMENT>
+inline int psbt_input_set_issuance_amount_commitment(const INPUT& input, const ISSUANCE_AMOUNT_COMMITMENT& issuance_amount_commitment) {
+    int ret = ::wally_psbt_input_set_issuance_amount_commitment(detail::get_p(input), issuance_amount_commitment.data(), issuance_amount_commitment.size());
+    return ret;
+}
+
+template <class INPUT, class ISSUANCE_AMOUNT_RANGEPROOF>
+inline int psbt_input_set_issuance_amount_rangeproof(const INPUT& input, const ISSUANCE_AMOUNT_RANGEPROOF& issuance_amount_rangeproof) {
+    int ret = ::wally_psbt_input_set_issuance_amount_rangeproof(detail::get_p(input), issuance_amount_rangeproof.data(), issuance_amount_rangeproof.size());
+    return ret;
+}
+
+template <class INPUT, class ENTROPY>
+inline int psbt_input_set_issuance_asset_entropy_len(const INPUT& input, const ENTROPY& entropy) {
+    int ret = ::wally_psbt_input_set_issuance_asset_entropy_len(detail::get_p(input), entropy.data(), entropy.size());
     return ret;
 }
 
