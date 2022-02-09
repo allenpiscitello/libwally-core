@@ -90,6 +90,11 @@ struct wally_psbt_input {
     size_t genesis_blockhash_len;
     unsigned char *claim_script;
     size_t claim_script_len;
+    uint64_t pegin_amount;
+    uint32_t has_pegin_amount;
+    struct wally_tx_witness_stack *pegin_witness;
+    unsigned char *utxo_rangeproof;
+    size_t utxo_rangeproof_len;
 #endif /* BUILD_ELEMENTS */
 };
 
@@ -1099,6 +1104,46 @@ WALLY_CORE_API int wally_psbt_input_set_claim_script(
     struct wally_psbt_input *input,
     const unsigned char *script,
     size_t script_len);
+
+/**
+ * Set the pegin amount for an input.
+ *
+ * :param input: The input to update.
+ * :param pegin_amount: The pegin amount for this input.
+ */
+WALLY_CORE_API int wally_psbt_input_set_pegin_amount(
+    struct wally_psbt_input *input,
+    uint64_t pegin_amount);
+
+/**
+ * Clears the pegin amount for an input.
+ *
+ * :param input: The input to update.
+ */
+WALLY_CORE_API int wally_psbt_input_clear_pegin_amount(
+    struct wally_psbt_input *input);
+
+/**
+ * Set the pegin_witness in an input.
+ *
+ * :param input: The input to update.
+ * :param pegin_witness: The pegin witness stack for the input, or NULL if no pegin witness is present.
+ */
+WALLY_CORE_API int wally_psbt_input_set_pegin_witness(
+    struct wally_psbt_input *input,
+    const struct wally_tx_witness_stack *pegin_witness);
+
+/**
+ * Set the utxo rangeproof in an elements input.
+ *
+ * :param input: The input to update.
+ * :param utxo_rangeproof: The utxo rangeproof for this input.
+ * :param utxo_rangeproof_len: Length of ``utxo_rangeproof`` in bytes.
+ */
+WALLY_CORE_API int wally_psbt_input_set_utxo_rangeproof(
+    struct wally_psbt_input *input,
+    const unsigned char *utxo_rangeproof,
+    size_t utxo_rangeproof_len);
 
 /**
  * Set the blinding pubkey in an elements output.

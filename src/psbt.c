@@ -575,6 +575,27 @@ SET_STRUCT(wally_psbt_input, pegin_tx, wally_tx,
 SET_BYTES(wally_psbt_input, txoutproof)
 SET_BYTES_N(wally_psbt_input, genesis_blockhash, SHA256_LEN)
 SET_BYTES(wally_psbt_input, claim_script)
+
+int wally_psbt_input_set_pegin_amount(struct wally_psbt_input *input, uint64_t pegin_amount)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->pegin_amount = pegin_amount;
+    input->has_pegin_amount = 1u;
+    return WALLY_OK;
+}
+
+int wally_psbt_input_clear_pegin_amount(struct wally_psbt_input *input)
+{
+    if (!input || input->psbt_version == 0)
+        return WALLY_EINVAL;
+    input->pegin_amount = 0;
+    input->has_pegin_amount = 0u;
+    return WALLY_OK;
+}
+SET_STRUCT(wally_psbt_input, pegin_witness, wally_tx_witness_stack,
+           wally_tx_witness_stack_clone_alloc, wally_tx_witness_stack_free)
+SET_BYTES(wally_psbt_input, utxo_rangeproof)
 #endif /* BUILD_ELEMENTS */
 
 static int psbt_input_free(struct wally_psbt_input *input, bool free_parent)
@@ -604,6 +625,8 @@ static int psbt_input_free(struct wally_psbt_input *input, bool free_parent)
         clear_and_free(input->txoutproof, input->txoutproof_len);
         clear_and_free(input->genesis_blockhash, input->genesis_blockhash_len);
         clear_and_free(input->claim_script, input->claim_script_len);
+        wally_tx_witness_stack_free(input->pegin_witness);
+        clear_and_free(input->utxo_rangeproof, input->utxo_rangeproof_len);
 #endif /* BUILD_ELEMENTS */
 
         wally_clear(input, sizeof(*input));
@@ -997,6 +1020,38 @@ int wally_psbt_add_input_at(struct wally_psbt *psbt,
                 if ((ret = replace_bytes(input->blinding_nonce, SHA256_LEN, &psbt->inputs[index].blinding_nonce, &psbt->inputs[index].blinding_nonce_len)) != WALLY_OK)
                     goto cleanup;
                 if ((ret = replace_bytes(input->entropy, SHA256_LEN, &psbt->inputs[index].entropy, &psbt->inputs[index].entropy_len)) != WALLY_OK)
+                    goto cleanup;
+            }
+            if (input->features & WALLY_TX_IS_PEGIN) {
+                const unsigned char *cursor = psbt->inputs[index].pegin_witness->items[0].witness;
+                size_t max = sizeof(psbt->inputs[index].pegin_amount);
+                if ((ret = wally_tx_witness_stack_clone_alloc(input->pegin_witness, &psbt->inputs[index].pegin_witness)) != WALLY_OK)
+                    goto cleanup;
+
+                if (psbt->inputs[index].pegin_witness->num_items != 6) {
+                    ret = WALLY_EINVAL;
+                    goto cleanup;
+                }
+                if (psbt->inputs[index].pegin_witness->items[0].witness_len != 8) {
+                    ret = WALLY_EINVAL;
+                    goto cleanup;
+                }
+                psbt->inputs[index].pegin_amount = pull_le64(&cursor, &max);
+
+                if (psbt->inputs[index].pegin_witness->items[2].witness_len != WALLY_TXHASH_LEN) {
+                    ret = WALLY_EINVAL;
+                    goto cleanup;
+                }
+                if ((ret = replace_bytes(psbt->inputs[index].pegin_witness->items[2].witness, psbt->inputs[index].pegin_witness->items[2].witness_len,
+                                         &psbt->inputs[index].genesis_blockhash, &psbt->inputs[index].genesis_blockhash_len)) != WALLY_OK)
+                    goto cleanup;
+                if ((ret = replace_bytes(psbt->inputs[index].pegin_witness->items[3].witness, psbt->inputs[index].pegin_witness->items[3].witness_len,
+                                         &psbt->inputs[index].claim_script, &psbt->inputs[index].claim_script_len)) != WALLY_OK)
+                    goto cleanup;
+                if ((ret = wally_tx_from_bytes(psbt->inputs[index].pegin_witness->items[4].witness, psbt->inputs[index].pegin_witness->items[4].witness_len, 0, &psbt->inputs[index].pegin_tx)) != WALLY_OK)
+                    goto cleanup;
+                if ((ret = replace_bytes(psbt->inputs[index].pegin_witness->items[5].witness, psbt->inputs[index].pegin_witness->items[5].witness_len,
+                                         &psbt->inputs[index].txoutproof, &psbt->inputs[index].txoutproof_len)) != WALLY_OK)
                     goto cleanup;
             }
 #endif /* BUILD_ELEMENTS */
@@ -1503,6 +1558,75 @@ static int pull_psbt_input(const unsigned char **cursor, size_t *max,
                 PSBT_PULL_B(input, inflation_keys_rangeproof);
                 break;
             }
+            case PSBT_ELEMENTS_IN_PEG_IN_TX: {
+                if (result->pegin_tx)
+                    return WALLY_EINVAL; /* Duplicate value */
+
+                subfield_nomore_end(cursor, max, key, key_len);
+
+                /* Start parsing the value field. */
+                pull_subfield_start(cursor, max,
+                                    pull_varint(cursor, max),
+                                    &val, &val_max);
+
+                //TODO: We don't know if the parent chain is elements or not. We will assume parent chain is not an Elements tx.
+                ret = wally_tx_from_bytes(val, val_max, 0, &result->pegin_tx);
+                if (ret != WALLY_OK)
+                    return ret;
+
+                pull_subfield_end(cursor, max, val, val_max);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_PEG_IN_TXOUT_PROOF:
+                PSBT_PULL_B(input, txoutproof);
+                break;
+            case PSBT_ELEMENTS_IN_PEG_IN_GENESIS:
+                PSBT_PULL_B(input, genesis_blockhash);
+                break;
+            case PSBT_ELEMENTS_IN_PEG_IN_CLAIM_SCRIPT:
+                PSBT_PULL_B(input, claim_script);
+                break;
+            case PSBT_ELEMENTS_IN_PEG_IN_VALUE: {
+                if (result->has_pegin_amount)
+                    return WALLY_EINVAL;
+                subfield_nomore_end(cursor, max, key, key_len);
+                pull_subfield_start(cursor, max, pull_varint(cursor, max), &val, &val_max);
+
+                if (val_max != sizeof(result->pegin_amount))
+                    return WALLY_EINVAL;
+
+                result->pegin_amount = pull_le64(&val, &val_max);
+                result->has_pegin_amount = 1u;
+                pull_subfield_end(cursor, max, val, val_max);
+                break;
+            }
+            case PSBT_ELEMENTS_IN_PEG_IN_WITNESS: {
+                uint64_t num_witnesses;
+                size_t i;
+                if (result->pegin_witness)
+                    return WALLY_EINVAL; /* Duplicate value */
+                subfield_nomore_end(cursor, max, key, key_len);
+
+                /* Start parsing the value field. */
+                pull_subfield_start(cursor, max,
+                                    pull_varint(cursor, max),
+                                    &val, &val_max);
+                num_witnesses = pull_varint(&val, &val_max);
+                ret = wally_tx_witness_stack_init_alloc(num_witnesses, &result->pegin_witness);
+                if (ret != WALLY_OK)
+                    return ret;
+
+                for (i = 0; i < num_witnesses; ++i) {
+                    uint64_t witness_len = pull_varint(&val, &val_max);
+                    ret = wally_tx_witness_stack_set(result->pegin_witness, i,
+                                                     pull_skip(&val, &val_max, witness_len),
+                                                     witness_len);
+                    if (ret != WALLY_OK)
+                        return ret;
+                }
+                subfield_nomore_end(cursor, max, val, val_max);
+                break;
+            }
             case PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS: {
                 if (result->has_inflation_keys)
                     return WALLY_EINVAL;
@@ -1529,6 +1653,9 @@ static int pull_psbt_input(const unsigned char **cursor, size_t *max,
                 PSBT_PULL_B(input, entropy);
                 break;
             }
+            case PSBT_ELEMENTS_IN_UTXO_RANGEPROOF:
+                PSBT_PULL_B(input, utxo_rangeproof);
+                break;
             case PSBT_ELEMENTS_IN_ISSUANCE_BLIND_VALUE_PROOF: {
                 PSBT_PULL_B(input, issuance_amount_blind_proof);
                 break;
@@ -1537,33 +1664,6 @@ static int pull_psbt_input(const unsigned char **cursor, size_t *max,
                 PSBT_PULL_B(input, inflation_keys_blind_proof);
                 break;
             }
-            case PSBT_ELEMENTS_IN_PEG_IN_TX: {
-                if (result->pegin_tx)
-                    return WALLY_EINVAL; /* Duplicate value */
-
-                subfield_nomore_end(cursor, max, key, key_len);
-
-                /* Start parsing the value field. */
-                pull_subfield_start(cursor, max,
-                                    pull_varint(cursor, max),
-                                    &val, &val_max);
-
-                ret = wally_tx_from_bytes(val, val_max, flags, &result->pegin_tx);
-                if (ret != WALLY_OK)
-                    return ret;
-
-                pull_subfield_end(cursor, max, val, val_max);
-                break;
-            }
-            case PSBT_ELEMENTS_IN_PEG_IN_TXOUT_PROOF:
-                PSBT_PULL_B(input, txoutproof);
-                break;
-            case PSBT_ELEMENTS_IN_PEG_IN_GENESIS:
-                PSBT_PULL_B(input, genesis_blockhash);
-                break;
-            case PSBT_ELEMENTS_IN_PEG_IN_CLAIM_SCRIPT:
-                PSBT_PULL_B(input, claim_script);
-                break;
             default:
                 goto unknown_type;
             }
@@ -2218,7 +2318,6 @@ static int push_psbt_input(unsigned char **cursor, size_t *max, uint32_t flags,
         }
     }
 #ifdef BUILD_ELEMENTS
-    /* Issuance */
     if (input->has_issuance_amount) {
         push_elements_key(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_VALUE, NULL, 0);
         push_varint(cursor, max, sizeof(input->issuance_amount));
@@ -2230,22 +2329,6 @@ static int push_psbt_input(unsigned char **cursor, size_t *max, uint32_t flags,
                           input->issuance_amount_rangeproof, input->issuance_amount_rangeproof_len);
     push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_KEYS_RANGEPROOF,
                           input->inflation_keys_rangeproof, input->inflation_keys_rangeproof_len);
-    if (input->has_inflation_keys) {
-        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS, NULL, 0);
-        push_varint(cursor, max, sizeof(input->inflation_keys));
-        push_le64(cursor, max, input->inflation_keys);
-    }
-    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS_COMMITMENT,
-                          input->inflation_keys_commitment, input->inflation_keys_commitment_len);
-    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLINDING_NONCE,
-                          input->blinding_nonce, input->blinding_nonce_len);
-    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_ASSET_ENTROPY,
-                          input->entropy, input->entropy_len);
-    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_VALUE_PROOF,
-                          input->issuance_amount_blind_proof, input->issuance_amount_blind_proof_len);
-    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_INFLATION_KEYS_PROOF,
-                          input->inflation_keys_blind_proof, input->inflation_keys_blind_proof_len);
-    /* Peg ins */
     if (input->pegin_tx) {
         push_elements_key(cursor, max, PSBT_ELEMENTS_IN_PEG_IN_TX, NULL, 0);
         if ((ret = push_length_and_tx(cursor, max,
@@ -2259,6 +2342,39 @@ static int push_psbt_input(unsigned char **cursor, size_t *max, uint32_t flags,
                           input->genesis_blockhash, input->genesis_blockhash_len);
     push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_PEG_IN_CLAIM_SCRIPT,
                           input->claim_script, input->claim_script_len);
+    if (input->has_pegin_amount) {
+        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_PEG_IN_VALUE, NULL, 0);
+        push_varint(cursor, max, sizeof(input->pegin_amount));
+        push_le64(cursor, max, input->pegin_amount);
+    }
+    if (input->pegin_witness) {
+        size_t wit_len = 0;
+
+        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_PEG_IN_WITNESS, NULL, 0);
+
+        /* First pass simply calculates length */
+        push_witness_stack(NULL, &wit_len, input->pegin_witness);
+
+        push_varint(cursor, max, wit_len);
+        push_witness_stack(cursor, max, input->pegin_witness);
+    }
+    if (input->has_inflation_keys) {
+        push_elements_key(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS, NULL, 0);
+        push_varint(cursor, max, sizeof(input->inflation_keys));
+        push_le64(cursor, max, input->inflation_keys);
+    }
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_INFLATION_KEYS_COMMITMENT,
+                          input->inflation_keys_commitment, input->inflation_keys_commitment_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLINDING_NONCE,
+                          input->blinding_nonce, input->blinding_nonce_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_ASSET_ENTROPY,
+                          input->entropy, input->entropy_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_UTXO_RANGEPROOF,
+                          input->utxo_rangeproof, input->utxo_rangeproof_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_VALUE_PROOF,
+                          input->issuance_amount_blind_proof, input->issuance_amount_blind_proof_len);
+    push_elements_varbuff(cursor, max, PSBT_ELEMENTS_IN_ISSUANCE_BLIND_INFLATION_KEYS_PROOF,
+                          input->inflation_keys_blind_proof, input->inflation_keys_blind_proof_len);
 #endif /* BUILD_ELEMENTS */
     /* Unknowns */
     push_map(cursor, max, &input->unknowns);
@@ -2580,6 +2696,14 @@ static int combine_inputs(struct wally_psbt_input *dst,
     COMBINE_BYTES(input, txoutproof);
     COMBINE_BYTES(input, genesis_blockhash);
     COMBINE_BYTES(input, claim_script);
+    if (!dst->has_pegin_amount && src->has_pegin_amount) {
+        dst->has_pegin_amount = src->has_pegin_amount;
+        dst->pegin_amount = src->pegin_amount;
+    }
+    if (!dst->pegin_witness && src->pegin_witness &&
+        (ret = wally_psbt_input_set_pegin_witness(dst, src->pegin_witness)) != WALLY_OK)
+        return ret;
+    COMBINE_BYTES(input, utxo_rangeproof);
 #endif
     return WALLY_OK;
 }
@@ -2943,6 +3067,55 @@ static bool input_get_scriptcode(const struct wally_psbt_input *input,
     return true;
 }
 
+#ifdef BUILD_ELEMENTS
+int psbt_build_pegin_witness_alloc(const struct wally_psbt_input *input, struct wally_tx_witness_stack **witness)
+{
+    int ret = WALLY_OK;
+    unsigned char pegin_amount[8];
+    unsigned char *pegin_tx_bytes, *cursor;
+    size_t pegin_tx_len, written, max = sizeof(pegin_amount);
+
+    // TODO: This is hardcoded for Liquid since the field is not available in PSET currently. This should be a PSET field.
+    unsigned char asset[] = {0x6f, 0x02, 0x79, 0xe9, 0xed, 0x04, 0x1c, 0x3d, 0x71, 0x0a, 0x9f, 0x57, 0xd0, 0xc0, 0x29, 0x28, 0x41,
+                             0x64, 0x60, 0xc4, 0xb7, 0x22, 0xae, 0x34, 0x57, 0xa1, 0x1e, 0xec, 0x38, 0x1c, 0x52, 0x6d};
+
+    cursor = pegin_amount;
+    push_le64(&cursor, &max, input->pegin_amount);
+
+    if ((ret = wally_tx_get_length(input->pegin_tx, 0, &pegin_tx_len)) != WALLY_OK)
+        return ret;
+
+    pegin_tx_bytes = wally_calloc(pegin_tx_len);
+    if (!pegin_tx_bytes)
+        return WALLY_ENOMEM;
+
+    if ((ret = wally_tx_to_bytes(input->pegin_tx, 0, pegin_tx_bytes, pegin_tx_len, &written)) != WALLY_OK)
+        goto cleanup;
+
+    if ((ret = wally_tx_witness_stack_init_alloc(6, witness)) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, pegin_amount, sizeof(pegin_amount))) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, asset, sizeof(asset))) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, input->genesis_blockhash, input->genesis_blockhash_len)) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, input->claim_script, input->claim_script_len)) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, pegin_tx_bytes, pegin_tx_len)) != WALLY_OK)
+        goto cleanup;
+    if ((ret = wally_tx_witness_stack_add(*witness, input->txoutproof, input->txoutproof_len)) != WALLY_OK)
+        goto cleanup;
+
+cleanup:
+    wally_free(pegin_tx_bytes);
+    if (ret != WALLY_OK)
+        wally_tx_witness_stack_free(*witness);
+    return ret;
+}
+
+#endif
+
 int wally_psbt_sign(struct wally_psbt *psbt,
                     const unsigned char *key, size_t key_len, uint32_t flags)
 {
@@ -2994,6 +3167,18 @@ int wally_psbt_sign(struct wally_psbt *psbt,
         size_t keypath_index = 0, scriptcode_len;
         uint32_t sighash;
 
+#ifdef BUILD_ELEMENTS
+        if (input->pegin_tx && input->txoutproof && input->claim_script &&
+            input->genesis_blockhash && input->pegin_amount) {
+            wally_tx_witness_stack_free(input->pegin_witness);
+            if ((ret = psbt_build_pegin_witness_alloc(input, &input->pegin_witness)) != WALLY_OK)
+                return ret;
+        }
+        if (input->pegin_witness) {
+            if (!wally_tx_witness_stack_clone_alloc(input->pegin_witness, &txin->pegin_witness))
+                return ret;
+        }
+#endif
         /* See if this input has a keypath matching the pubkey of the private key supplied */
         ret = wally_map_find(&input->keypaths, full_pubkey, full_pubkey_len, &keypath_index);
         if (ret == WALLY_OK && !keypath_index)
@@ -3607,6 +3792,9 @@ PSBT_GET_S(input, pegin_tx, wally_tx, tx_clone_alloc)
 PSBT_GET_B(input, txoutproof)
 PSBT_GET_B(input, genesis_blockhash)
 PSBT_GET_B(input, claim_script)
+PSBT_GET_I(input, pegin_amount, size_t)
+PSBT_GET_S(input, pegin_witness, wally_tx_witness_stack, wally_tx_witness_stack_clone_alloc)
+PSBT_GET_B(input, utxo_rangeproof)
 
 PSBT_SET_I(input, issuance_amount, uint64_t)
 int wally_psbt_clear_input_issuance_amount(struct wally_psbt *psbt, size_t index) {
@@ -3628,6 +3816,12 @@ PSBT_SET_S(input, pegin_tx, wally_tx)
 PSBT_SET_B(input, txoutproof)
 PSBT_SET_B(input, genesis_blockhash)
 PSBT_SET_B(input, claim_script)
+PSBT_SET_I(input, pegin_amount, uint64_t)
+int wally_psbt_clear_input_pegin_amount(struct wally_psbt *psbt, size_t index) {
+    return wally_psbt_input_clear_pegin_amount(psbt_get_input(psbt, index));
+}
+PSBT_SET_S(input, pegin_witness, wally_tx_witness_stack)
+PSBT_SET_B(input, utxo_rangeproof)
 #endif /* BUILD_ELEMENTS */
 
 PSBT_GET_B(output, redeem_script)

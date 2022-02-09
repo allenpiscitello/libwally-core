@@ -1587,6 +1587,11 @@ inline int psbt_input_clear_issuance_amount(struct wally_psbt_input* input) {
     return ret;
 }
 
+inline int psbt_input_clear_pegin_amount(struct wally_psbt_input* input) {
+    int ret = ::wally_psbt_input_clear_pegin_amount(input);
+    return ret;
+}
+
 template <class INPUT, class BLINDING_NONCE>
 inline int psbt_input_set_blinding_nonce(const INPUT& input, const BLINDING_NONCE& blinding_nonce) {
     int ret = ::wally_psbt_input_set_blinding_nonce(detail::get_p(input), blinding_nonce.data(), blinding_nonce.size());
@@ -1654,14 +1659,32 @@ inline int psbt_input_set_issuance_asset_entropy_len(const INPUT& input, const E
 }
 
 template <class INPUT>
+inline int psbt_input_set_pegin_amount(const INPUT& input, uint64_t pegin_amount) {
+    int ret = ::wally_psbt_input_set_pegin_amount(detail::get_p(input), pegin_amount);
+    return ret;
+}
+
+template <class INPUT>
 inline int psbt_input_set_pegin_tx(const INPUT& input, const struct wally_tx* pegin_tx) {
     int ret = ::wally_psbt_input_set_pegin_tx(detail::get_p(input), pegin_tx);
+    return ret;
+}
+
+template <class INPUT>
+inline int psbt_input_set_pegin_witness(const INPUT& input, const struct wally_tx_witness_stack* pegin_witness) {
+    int ret = ::wally_psbt_input_set_pegin_witness(detail::get_p(input), pegin_witness);
     return ret;
 }
 
 template <class INPUT, class PROOF>
 inline int psbt_input_set_txoutproof(const INPUT& input, const PROOF& proof) {
     int ret = ::wally_psbt_input_set_txoutproof(detail::get_p(input), proof.data(), proof.size());
+    return ret;
+}
+
+template <class INPUT, class UTXO_RANGEPROOF>
+inline int psbt_input_set_utxo_rangeproof(const INPUT& input, const UTXO_RANGEPROOF& utxo_rangeproof) {
+    int ret = ::wally_psbt_input_set_utxo_rangeproof(detail::get_p(input), utxo_rangeproof.data(), utxo_rangeproof.size());
     return ret;
 }
 

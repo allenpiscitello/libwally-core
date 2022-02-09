@@ -299,6 +299,15 @@ class PSBTTests(unittest.TestCase):
             self._try_get_set_b(psbt_set_input_claim_script,
                                 psbt_get_input_claim_script,
                                 psbt_get_input_claim_script_len, psbt, dummy_bytes)
+            self._try_get_set_i(psbt_set_input_pegin_amount,
+                                psbt_clear_input_pegin_amount,
+                                psbt_get_input_pegin_amount,
+                                psbt2, 100)
+            self._try_set(psbt_set_input_pegin_witness, psbt, dummy_witness)
+            self._try_invalid(psbt_get_input_pegin_witness, psbt)
+            self._try_get_set_b(psbt_set_input_utxo_rangeproof,
+                                psbt_get_input_utxo_rangeproof,
+                                psbt_get_input_utxo_rangeproof_len, psbt2, dummy_bytes)
 
         #
         # Outputs

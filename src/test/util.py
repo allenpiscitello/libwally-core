@@ -179,7 +179,12 @@ class wally_psbt_input(Structure):
                 ('genesis_blockhash', c_void_p),
                 ('genesis_blockhash_len', c_ulong),
                 ('claim_script', c_void_p),
-                ('claim_script_len', c_ulong)]
+                ('claim_script_len', c_ulong),
+                ('pegin_amount', c_uint64),
+                ('has_pegin_amount', c_uint32),
+                ('pegin_witness', POINTER(wally_tx_witness_stack)),
+                ('utxo_rangeproof', c_void_p),
+                ('utxo_rangeproof_len', c_void_p)]
 
 class wally_psbt_output(Structure):
     _fields_ = [('redeem_script', c_void_p),
@@ -371,6 +376,7 @@ for f in (
     ('wally_psbt_input_add_signature', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong, c_void_p, c_ulong]),
     ('wally_psbt_input_clear_inflation_keys', c_int, [POINTER(wally_psbt_input)]),
     ('wally_psbt_input_clear_issuance_amount', c_int, [POINTER(wally_psbt_input)]),
+    ('wally_psbt_input_clear_pegin_amount', c_int, [POINTER(wally_psbt_input)]),
     ('wally_psbt_input_clear_required_locktime', c_int, [POINTER(wally_psbt_input)]),
     ('wally_psbt_input_clear_sequence', c_int, [POINTER(wally_psbt_input)]),
     ('wally_psbt_input_find_keypath', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong, c_ulong_p]),
@@ -392,7 +398,9 @@ for f in (
     ('wally_psbt_input_set_issuance_asset_entropy_len', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_keypaths', c_int, [POINTER(wally_psbt_input), POINTER(wally_map)]),
     ('wally_psbt_input_set_output_index', c_int, [POINTER(wally_psbt_input), c_uint]),
+    ('wally_psbt_input_set_pegin_amount', c_int, [POINTER(wally_psbt_input), c_uint64]),
     ('wally_psbt_input_set_pegin_tx', c_int, [POINTER(wally_psbt_input), POINTER(wally_tx)]),
+    ('wally_psbt_input_set_pegin_witness', c_int, [POINTER(wally_psbt_input), POINTER(wally_tx_witness_stack)]),
     ('wally_psbt_input_set_previous_txid', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_redeem_script', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_required_locktime', c_int, [POINTER(wally_psbt_input), c_uint]),
@@ -402,6 +410,7 @@ for f in (
     ('wally_psbt_input_set_txoutproof', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_unknowns', c_int, [POINTER(wally_psbt_input), POINTER(wally_map)]),
     ('wally_psbt_input_set_utxo', c_int, [POINTER(wally_psbt_input), POINTER(wally_tx)]),
+    ('wally_psbt_input_set_utxo_rangeproof', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_witness_script', c_int, [POINTER(wally_psbt_input), c_void_p, c_ulong]),
     ('wally_psbt_input_set_witness_utxo', c_int, [POINTER(wally_psbt_input), POINTER(wally_tx_output)]),
     ('wally_psbt_is_elements', c_int, [POINTER(wally_psbt), c_ulong_p]),
